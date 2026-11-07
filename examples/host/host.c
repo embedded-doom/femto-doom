@@ -29,10 +29,6 @@
 #define TEXTURE_SHIFT 0
 #endif
 
-#if !defined SPRITE_SHIFT
-#define SPRITE_SHIFT 0
-#endif
-
 #define COLEXTRABITS 7
 #define COLBITS      9
 
@@ -226,7 +222,7 @@ void R_DrawColumnWall(const draw_column_vars_t* dcvars)
 
 void R_DrawColumnSprite(const draw_column_vars_t* dcvars)
 {
-	draw_column(dcvars, SPRITE_SHIFT);
+	draw_column(dcvars, 0);
 }
 
 
@@ -256,7 +252,7 @@ void R_DrawFuzzColumn(const draw_column_vars_t* dcvars)
 	for (int y = yl; y <= yh; y++)
 	{
 		if (fuzz[fuzzpos])
-			view_pixel(dcvars->x, y, shade[dcvars->source[frac >> (COLBITS + SPRITE_SHIFT)]]);
+			view_pixel(dcvars->x, y, shade[dcvars->source[frac >> COLBITS]]);
 
 		frac += dcvars->fracstep;
 		fuzzpos = (fuzzpos + 1) % 50;

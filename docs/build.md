@@ -9,7 +9,7 @@ Defined on the compiler's command line; all are optional.
 | `SCREEN_WIDTH`, `SCREEN_HEIGHT` | 240, 160 | the screen in pixels; must match `femtowad wads --screen` |
 | `VIEW_WINDOW_WIDTH`, `VIEW_WINDOW_HEIGHT` | the screen above the status bar | the 3D view in pixels; the width must be in `VIEW_WIDTHS` in femtowad's `viewgen.py` |
 | `MAP_WIDTH` | `SCREEN_WIDTH` | automap width |
-| `TEXTURE_SHIFT`, `SPRITE_SHIFT` | 0 | walls and sprites keep every 2^n-th row; `TEXTURE_SHIFT` must match `femtowad wads --texture-shift` |
+| `TEXTURE_SHIFT` | 0 | walls keep every 2^n-th row; must match `femtowad wads --texture-shift` |
 | `HIGH_DETAIL` | off | composed wall textures keep every column instead of every 4th; must match `femtowad wads --high-detail` |
 | `NUKAGE_COLOR` | 122 | colour of nukage floors |
 | `FLAT_WALL` | off | walls in one colour |

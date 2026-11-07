@@ -25,7 +25,7 @@ time and input, and draws what it outputs; [i_platform.h](src/i_platform.h) is t
 - Game data read in place, never loaded; optionally through the platform, e.g. from external flash
 - No frame buffer: the 3D view column by column and pictures go straight to the platform
 - Any screen size, 3D view up to 320 pixels wide
-- Build options trade detail and speed for memory: wall and sprite resolution, lookup tables, per-frame limits
+- Build options trade detail and speed for memory: wall resolution, lookup tables, per-frame limits
 - Plain C11, no operating system needed
 - Automap over the 3D view, rotating with the player
 - Floors and ceilings in one colour, light per sector without darkening with distance

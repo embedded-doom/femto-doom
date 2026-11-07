@@ -869,7 +869,7 @@ static void R_DrawVisSprite(const vissprite_t *vis)
     while (dcvars.x < VIEW_WINDOW_WIDTH)
     {
         const column_t* column = (const column_t*) ((const byte*)patch + W_FetchInt32(&patch->columnofs[frac >> FRACBITS]));
-        R_DrawMaskedColumn(colfunc, &dcvars, column, SPRITE_SHIFT);
+        R_DrawMaskedColumn(colfunc, &dcvars, column, 0);
 
         frac += vis->xiscale;
 

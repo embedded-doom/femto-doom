@@ -118,7 +118,7 @@ typedef post_t	column_t;
 // One column of the 3D view to draw: rows yl to yh at x. Row y shows texel
 // source[frac >> (9 + shift)] through colormap, with the 16-bit
 // frac = (texturemid >> 7) + (y - CENTER_Y) * fracstep, shift being TEXTURE_SHIFT for
-// walls and SPRITE_SHIFT for sprites.
+// walls and 0 for sprites.
 typedef struct {
   int16_t              x;
   int16_t              yl;

@@ -44,10 +44,6 @@
 #define TEXTURE_SHIFT 0
 #endif
 
-#if !defined SPRITE_SHIFT
-#define SPRITE_SHIFT 0
-#endif
-
 #include "r_defs.h"
 #include "d_player.h"
 
