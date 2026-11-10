@@ -502,13 +502,13 @@ static boolean M_Respond (event_t* ev)
     if (messageToPrint)
     {
         if (messageNeedsInput == true &&
-                !(ch == 'n' || ch == 'y' || ch == key_menu_escape))
+                !(ch == key_menu_enter || ch == key_fire || ch == key_menu_escape))
             return false;
 
         _g_menuactive  = messageLastMenuActive;
         messageToPrint = false;
         if (messageRoutine)
-            messageRoutine(ch == 'y');
+            messageRoutine(ch == key_menu_enter);
 
         _g_menuactive = false;
         S_StartSound(NULL,sfx_swtchx);
