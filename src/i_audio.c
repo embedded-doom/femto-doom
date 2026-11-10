@@ -54,6 +54,8 @@
 
 #define MAX_CHANNELS    1
 
+#define TONES_PER_TIC   4
+
 
 static int16_t firstsfx;
 static int16_t firstmus;
@@ -78,6 +80,13 @@ int16_t I_StartSound(sfxenum_t id, int16_t channel, int16_t vol, int16_t sep)
 	DMX_PlaySound(W_GetLumpByNum(firstsfx + id), vol);
 
 	return channel;
+}
+
+
+uint16_t I_SoundTics(sfxenum_t id)
+{
+	const uint8_t* sound = W_GetLumpByNum(firstsfx + id);
+	return (W_FetchUInt16(&sound[2]) + TONES_PER_TIC - 1) / TONES_PER_TIC;
 }
 
 

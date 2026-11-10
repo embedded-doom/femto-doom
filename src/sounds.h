@@ -52,9 +52,6 @@ struct sfxinfo_struct {
 
   // Sfx priority
   int8_t priority;
-
-  //Length of clip
-  int8_t ticks;
 };
 
 //

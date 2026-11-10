@@ -50,6 +50,9 @@ void I_InitSound(void);
 // Starts a sound in a particular sound channel.
 int16_t I_StartSound(sfxenum_t id, int16_t channel, int16_t vol, int16_t sep);
 
+// The tics a sound effect lasts.
+uint16_t I_SoundTics(sfxenum_t id);
+
 
 //
 //  MUSIC I/O

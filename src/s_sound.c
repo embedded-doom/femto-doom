@@ -221,7 +221,7 @@ static void S_StartSoundAtVolume(mobj_t* origin, sfxenum_t sfx_id, int16_t volum
     if (h != -1)
     {
         channels[cnum].handle = h;
-        channels[cnum].tickend = (_g_gametic + sfx->ticks);
+        channels[cnum].tickend = (_g_gametic + I_SoundTics(sfx_id));
     }
 
 }
@@ -283,7 +283,7 @@ static boolean S_SoundIsPlaying(int16_t cnum)
     {
         int32_t ticknow = _g_gametic;
 
-        return (channel->tickend < ticknow);
+        return (ticknow < channel->tickend);
     }
 
     return false;
