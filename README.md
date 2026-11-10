@@ -29,8 +29,8 @@ time and input, and draws what it outputs; [i_platform.h](src/i_platform.h) is t
 - Plain C11, no operating system needed
 - Automap over the 3D view, rotating with the player
 - Floors and ceilings in one colour, light per sector without darkening with distance
-- Sound effects as events, samples from the platform
-- No music, saving or multiplayer
+- PC speaker sound effects and one-voice music, played by the platform
+- No saving or multiplayer
 
 ## Getting started
 

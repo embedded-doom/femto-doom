@@ -142,9 +142,17 @@ void W_Fetch(const void* src, void* dst, uint16_t len)
 // Sound
 //
 
-void DMX_Play(sfxenum_t id)
+void DMX_PlaySound(const uint8_t* sound, uint8_t volume)
 {
-	(void)id;
+	(void)sound;
+	(void)volume;
+}
+
+
+void DMX_PlaySong(const uint8_t* song, boolean looping)
+{
+	(void)song;
+	(void)looping;
 }
 
 

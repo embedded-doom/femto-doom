@@ -42,7 +42,6 @@
 #include "doomtype.h"
 #include "d_event.h"
 #include "m_fixed.h"
-#include "sounds.h"
 
 
 //
@@ -185,8 +184,15 @@ _Noreturn void I_Fatal(const char *message);
 void W_Fetch(const void* src, void* dst, uint16_t len);
 #endif
 
-// Sound effects.
-void DMX_Play(sfxenum_t id);
+// A sound effect, Doom's PC speaker lump inside the graphics WAD: 0 (u16), the tone count (u16),
+// then a tone (u8) per 1/140 s, 0 for silence. It replaces the one playing. volume runs from 1,
+// far away, to 120, close by.
+void DMX_PlaySound(const uint8_t* sound, uint8_t volume);
+
+// A song for one PC speaker voice inside the graphics WAD, or NULL to stop: the pair count
+// (u16), then per pair a tone (u8) as in the sounds and its length in 1/140 s (u8). Sounds play
+// over it while the song goes on. looping does not matter with NULL.
+void DMX_PlaySong(const uint8_t* song, boolean looping);
 
 // 256 RGB triples, inside the graphics WAD. A platform may hold a new palette back until the
 // next I_FinishUpdate.

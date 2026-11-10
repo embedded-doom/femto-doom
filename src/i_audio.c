@@ -55,9 +55,12 @@
 #define MAX_CHANNELS    1
 
 
+static int16_t firstsfx;
+static int16_t firstmus;
+
+
 int16_t I_StartSound(sfxenum_t id, int16_t channel, int16_t vol, int16_t sep)
 {
-	UNUSED(vol);
 	UNUSED(sep);
 
 	if (!(0 <= channel && channel < MAX_CHANNELS))
@@ -72,7 +75,7 @@ int16_t I_StartSound(sfxenum_t id, int16_t channel, int16_t vol, int16_t sep)
 //	 || id == sfx_sawidl)
 //		return -1;
 
-	DMX_Play(id);
+	DMX_PlaySound(W_GetLumpByNum(firstsfx + id), vol);
 
 	return channel;
 }
@@ -83,8 +86,17 @@ void I_InitSound(void)
 	if (M_CheckParm("-nosound") || M_CheckParm("-nosfx"))
 		nosfxparm = true;
 
+	if (M_CheckParm("-nosound") || M_CheckParm("-nomusic"))
+		nomusicparm = true;
+
 	if (nomusicparm && nosfxparm)
 		return;
+
+	if (!nosfxparm)
+		firstsfx = W_GetNumForName("DPPISTOL") - 1;
+
+	if (!nomusicparm)
+		firstmus = W_GetNumForName("D_E1M1") - 1;
 
 	// Finished initialization.
 	I_Printf("I_InitSound: sound ready\n");
@@ -93,14 +105,15 @@ void I_InitSound(void)
 
 void I_PlaySong(musicenum_t handle, boolean looping)
 {
-	UNUSED(handle);
-	UNUSED(looping);
+	DMX_PlaySong(W_GetLumpByNum(firstmus + handle), looping);
 }
 
 
 void I_StopSong(musicenum_t handle)
 {
 	UNUSED(handle);
+
+	DMX_PlaySong(NULL, false);
 }
 
 

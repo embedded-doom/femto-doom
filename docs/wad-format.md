@@ -39,9 +39,22 @@ Values are i16 unless noted.
 | `STBAR` | status bar background: raw pixels, the screen's width × `ST_HEIGHT`; Doom's bar with the arms panel and percent signs drawn in, scaled |
 | `FLOOR4_8` | finale background: 64 × 64 raw pixels |
 | `DEMO3` | the attract-mode demo |
+| `DPPISTOL` … | the PC speaker sounds, consecutive in the order of the `sfx_` numbers in `sounds.h`, as in Doom: 0 (u16), the tone count (u16), a tone (u8) per 1/140 s |
+| `D_E1M1` … | the songs for one PC speaker voice, consecutive in the order of the `mus_` numbers in `sounds.h`: pair count (u16), then per pair a tone (u8) and its length in 1/140 s (u8) |
 | status bar, menu and intermission pictures, sprites, wall patches | Doom's patch format (`patch_t` in [i_platform.h](../src/i_platform.h)); the status bar's scaled as the bar is, walls keep every 4th column, sprites every 2nd, equal columns are stored once |
 
-Other flats, music and sound effects are not in it.
+Other flats, the MIDI music and the sampled sound effects are not in it.
+
+### Tones
+
+Tone 0 is silence. Tone 1–127 is the PC's 1,193,182 Hz timer divided by Doom's divisor for it,
+from 6818 for tone 1 (175 Hz) to 179 for tone 127 (6.7 kHz), about a quarter tone apart; the
+table is `DIVISORS` in femtowad's `music.py`.
+
+A song keeps one note at a time: of the notes sounding, the one started last, of a chord the
+highest. A note struck again starts after 1/140 s of silence. The song moves up by whole octaves
+until all but 1 in 20 of these notes reach tone 1; the rest move by octaves on their own.
+Percussion is left out.
 
 ## Map WAD
 

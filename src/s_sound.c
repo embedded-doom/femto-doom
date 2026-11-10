@@ -460,7 +460,7 @@ static boolean S_AdjustSoundParams(mobj_t* listener, mobj_t* source, int16_t *vo
 
 	if (!approx_dist)  // killough 11/98: handle zero-distance as special case
 	{
-        *vol = snd_SfxVolume;
+        *vol = snd_SfxVolume*8;
 		return *vol > 0;
 	}
 	

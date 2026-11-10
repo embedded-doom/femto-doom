@@ -31,7 +31,7 @@ hands the platform point into the WADs too; the platform reads them the same way
 | Group | Functions |
 |---|---|
 | system | `I_ZoneBase`, `I_GetTime`, `I_StartTic`, `I_Quit`, `I_Log`, `I_Fatal`, `W_Fetch` with `W_FETCH` |
-| sound | `DMX_Play` |
+| sound | `DMX_PlaySound`, `DMX_PlaySong` |
 | frame | `I_SetPalette`, `I_FinishUpdate`, `I_StartWipe`, `I_FinishWipe` |
 | 3D view | `R_DrawColumnWall`, `R_DrawColumnSprite`, `R_DrawFuzzColumn`, `R_DrawColumnFlat`, `V_ClearViewWindow` |
 | pictures | `V_DrawPatchScaled`, `V_DrawPatchNotScaled`, `V_DrawBackground`, `V_DrawRaw`, `V_DrawRawRect` |

@@ -76,7 +76,7 @@ static void D_UpdateFPS(void);
 
 //jff 1/22/98 parms for disabling music and sound
       boolean nosfxparm   = false;
-const boolean nomusicparm = true;
+      boolean nomusicparm = false;
 
 const boolean nodrawers = false;
 
@@ -479,8 +479,6 @@ void D_DoomInit(int argc, const char * const * argv)
     myargv = argv;
 
     // init subsystems
-    I_InitSound();
-
     I_Printf("Z_Init: Init zone memory allocation daemon.\n");
     Z_Init();
 
@@ -502,6 +500,7 @@ void D_DoomInit(int argc, const char * const * argv)
     I_Printf("P_Init: Init Playloop state.\n");
     P_Init();
 
+    I_InitSound();
     S_Init(snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
 
     I_Printf("HU_Init: Setting up heads up display.\n");

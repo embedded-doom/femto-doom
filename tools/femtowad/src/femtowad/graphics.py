@@ -4,7 +4,8 @@
 
 Walls keep every 4th column and sprites every 2nd, and pictures store equal columns once.
 TEXTUREP lists each texture's patches as lump numbers, SPRITES each sprite frame's lumps, and
-TEXCOLS every wall texture's columns.
+TEXCOLS every wall texture's columns. The PC speaker sounds and the songs for one speaker voice
+follow in the order of the engine's sound and music numbers.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from dataclasses import dataclass
 
 from .art import GAMMA_LEVELS
 from .info import MAX_SPRITE_FRAMES, SPRITES
+from .music import SONGS, convert
 from .picture import Picture
 from .texcols import texture_columns
 from .wad import Lump, Wad, name8
@@ -35,6 +37,13 @@ LEVEL_NAMES = 9
 RAW_PICTURES = {"STBAR", "WIMAP0", "TITLEPIC", "HELP2"}
 PICTURE_PREFIXES = ("ST", "M_", "WI")
 PLAYER_SPRITES_KEPT = {"PLAYN0", "PLAYW0", "PLAYV0"}
+SOUNDS = (
+    "pistol", "shotgn", "sgcock", "sawup", "sawidl", "sawful", "sawhit", "rlaunc", "rxplod", "firsht", "firxpl",
+    "pstart", "pstop", "doropn", "dorcls", "stnmov", "swtchn", "swtchx", "plpain", "dmpain", "popain", "slop",
+    "itemup", "wpnup", "oof", "telept", "posit1", "posit2", "posit3", "bgsit1", "bgsit2", "sgtsit", "brssit",
+    "sgtatk", "claw", "pldeth", "pdiehi", "podth1", "podth2", "podth3", "bgdth1", "bgdth2", "sgtdth", "brsdth",
+    "posact", "bgact", "dmact", "noway", "barexp", "punch", "tink", "getpow",
+)  # fmt: skip
 SPRITE_FRAME = struct.Struct("<8hBB")
 
 
@@ -106,7 +115,16 @@ def build_graphics(iwad: Wad, art: Mapping[str, bytes], texshift: int, high_deta
     wad.lumps[wad.index("PNAMES")] = Lump("TEXTUREP", texture_patches(wad, textures, pnames))
     wad["SPRITES"] = sprite_frames(wad, sprites)
     wad["TEXCOLS"] = texture_columns(wad.to_bytes(), wad["TEXTURE1"], wad["TEXTUREP"], texshift, high_detail)
+    add_audio(wad, iwad)
     return wad
+
+
+def add_audio(wad: Wad, iwad: Wad) -> None:
+    """The PC speaker sounds, then the songs, each consecutive, as the engine counts from the first."""
+    for sound in SOUNDS:
+        wad.lumps.append(Lump(f"DP{sound.upper()}", iwad[f"DP{sound.upper()}"]))
+    for song in SONGS:
+        wad.lumps.append(Lump(f"D_{song.upper()}", convert(iwad[f"D_{song.upper()}"])))
 
 
 def patch_names(pnames: bytes) -> list[str]:

@@ -15,7 +15,7 @@ from enum import IntFlag
 from typing import NamedTuple
 
 FRACUNIT = 1 << 16
-WAD_VERSION = 2
+WAD_VERSION = 3
 """The format of both WADs, which femtowad writes into a FEMTOWAD lump and the engine checks."""
 MAX_SPRITE_FRAMES = 23
 
