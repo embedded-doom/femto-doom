@@ -171,8 +171,8 @@ typedef struct mobj_s
     fixed_t             floorz;
     fixed_t             ceilingz;
 
-    // For movement checking; the radius is the type's, 0 once gibbed.
-    fixed_t             height;
+    // For movement checking the radius and height are the type's: the height a quarter on a
+    // corpse, both 0 once gibbed.
 
     uint32_t            flags;
 
@@ -187,7 +187,7 @@ typedef struct mobj_s
     mobjtype_t          type;
 } mobj_t;
 
-typedef char assertMobjSize[sizeof(mobj_t) == 52 ? 1 : -1];
+typedef char assertMobjSize[sizeof(mobj_t) == 48 ? 1 : -1];
 
 // A thing of type MT_MISC0 or later lives in the static pool as a bare
 // mobj_t with MF_STATIC set. Every other thing is the mo of an mobjext_t:
@@ -238,7 +238,7 @@ typedef struct
     mobj_t              mo;
 } mobjext_t;
 
-typedef char assertMobjExtSize[sizeof(void*) != 4 || sizeof(mobjext_t) == 96 ? 1 : -1];
+typedef char assertMobjExtSize[sizeof(void*) != 4 || sizeof(mobjext_t) == 92 ? 1 : -1];
 
 static inline mobj_t* P_Mobj(zref_t ref)
 {
@@ -267,6 +267,7 @@ mobjext_t* P_Ext(mobj_t* mobj);
 int16_t P_Health(mobj_t* mobj);
 mobj_t* P_MobjOfThinker(thinker_t* th);
 fixed_t PUREFUNC P_Radius(const mobj_t* mobj);
+fixed_t PUREFUNC P_Height(const mobj_t* mobj);
 void    P_RunStatics(void);
 
 void    P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);

@@ -353,10 +353,10 @@ static boolean PIT_CheckThing(mobj_t* thing)
     {
       // see if it went over / under
 
-      if (tmthing->z > thing->z + thing->height)
+      if (tmthing->z > thing->z + P_Height(thing))
   return true;    // overhead
 
-      if (tmthing->z+tmthing->height < thing->z)
+      if (tmthing->z+P_Height(tmthing) < thing->z)
   return true;    // underneath
 
       if (P_Ext(tmthing)->target && (P_Mobj(P_Ext(tmthing)->target)->type == thing->type))
@@ -669,10 +669,10 @@ boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y)
 
     if ( !(thing->flags & MF_NOCLIP) )
     {
-        if (_g_tmceilingz - _g_tmfloorz < thing->height)
+        if (_g_tmceilingz - _g_tmfloorz < P_Height(thing))
             return false;	// doesn't fit
 
-        if (_g_tmceilingz - thing->z < thing->height)
+        if (_g_tmceilingz - thing->z < P_Height(thing))
             return false;	// mobj must lower itself to fit
 
         if (_g_tmfloorz - thing->z > 24*FRACUNIT )
@@ -780,7 +780,7 @@ static boolean PTR_AimTraverse (intercept_t* in)
     // check angles to see if the thing can be aimed at
 
     dist = FixedMul (attackrange, in->frac);
-    thingtopslope = dist != 0 ? FixedApproxDiv(th->z + th->height - shootz, dist) : INT32_MAX;
+    thingtopslope = dist != 0 ? FixedApproxDiv(th->z + P_Height(th) - shootz, dist) : INT32_MAX;
 
     if (thingtopslope < bottomslope)
         return true;    // shot over the thing
@@ -936,7 +936,7 @@ static boolean PTR_ShootTraverse (intercept_t* in)
   // check angles to see if the thing can be aimed at
 
   dist = FixedMul (attackrange, in->frac);
-  thingtopslope = FixedApproxDiv (th->z+th->height - shootz , dist);
+  thingtopslope = FixedApproxDiv (th->z+P_Height(th) - shootz , dist);
 
   if (thingtopslope < aimslope)
     return true;  // shot over the thing
@@ -983,7 +983,7 @@ fixed_t P_AimLineAttack(mobj_t* t1, angle_t angle, fixed_t distance)
 
   x2 = t1->x + (distance>>FRACBITS)*finecosine(angle);
   y2 = t1->y + (distance>>FRACBITS)*finesine(  angle);
-  shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
+  shootz = t1->z + (P_Height(t1)>>1) + 8*FRACUNIT;
 
   // can't shoot outside view angles
 
@@ -1018,7 +1018,7 @@ void P_LineAttack(mobj_t* t1, angle_t angle, fixed_t distance, fixed_t slope, in
   la_damage = damage;
   x2 = t1->x + (distance>>FRACBITS)*finecosine(angle);
   y2 = t1->y + (distance>>FRACBITS)*finesine(  angle);
-  shootz = t1->z + (t1->height>>1) + 8*FRACUNIT;
+  shootz = t1->z + (P_Height(t1)>>1) + 8*FRACUNIT;
   attackrange = distance;
   aimslope = slope;
 
@@ -1074,7 +1074,7 @@ static boolean PTR_NoWayTraverse(intercept_t* in)
    P_LineOpening(ld),                      // Find openings
    _g_openrange <= 0 ||                       // No opening
    _g_openbottom > usething->z+24*FRACUNIT || // Too high it blocks
-   _g_opentop < usething->z+usething->height  // Too low it blocks
+   _g_opentop < usething->z+P_Height(usething)  // Too low it blocks
   )
   );
   }

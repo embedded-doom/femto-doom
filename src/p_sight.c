@@ -324,8 +324,8 @@ boolean P_CheckSight(mobj_t* t1, mobj_t* t2)
   P_NextValidCount();
 
   los.topslope = (los.bottomslope = t2->z - (los.sightzstart =
-                                             t1->z + t1->height -
-                                             (t1->height>>2))) + t2->height;
+                                             t1->z + P_Height(t1) -
+                                             (P_Height(t1)>>2))) + P_Height(t2);
   los.strace.dx = (los.t2x = t2->x) - (los.strace.x = t1->x);
   los.strace.dy = (los.t2y = t2->y) - (los.strace.y = t1->y);
 

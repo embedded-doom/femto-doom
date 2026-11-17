@@ -476,7 +476,6 @@ boolean P_SpawnLoadStatic(fixed_t x, fixed_t y, mobjtype_t type)
   mobj.type   = type;
   mobj.x      = x;
   mobj.y      = y;
-  mobj.height = info->height;
   mobj.flags  = info->flags | MF_STATIC;
   if (mobj.flags & (MF_SHOOTABLE | MF_MISSILE | MF_COUNTKILL))
     I_Error("P_SpawnLoadStatic: static thing %i acts", type);
@@ -614,7 +613,6 @@ static void P_StaticMobj(int16_t t, int16_t slot, const loadthing_t* lt, mobj_t*
   }
   else
     P_LoadThingHeights(t, lt->subsector, mobj);
-  mobj->height    = info->height;
   mobj->flags     = info->flags | MF_STATIC | MF_INPLACE | (lt->angle & 0x80 ? MF_AMBUSH : 0);
   mobj->state     = info->spawnstate;
   mobj->type      = lt->type;
@@ -686,7 +684,6 @@ static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
   mobj->sprev     = t;
   mobj->subsector = lt.subsector;
   P_LoadThingHeights(t, lt.subsector, mobj);
-  mobj->height    = info->height;
   mobj->flags     = info->flags | pooled | MF_INPLACE | (lt.angle & 0x80 ? MF_AMBUSH : 0);
   mobj->state     = info->spawnstate + (rec >> 4);
   mobj->tics      = rec & 15;

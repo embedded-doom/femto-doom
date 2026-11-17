@@ -227,10 +227,10 @@ static boolean PTR_SlideTraverse (intercept_t* in)
 
   P_LineOpening (li);
 
-  if (_g_openrange < slidemo->height)
+  if (_g_openrange < P_Height(slidemo))
     goto isblocking;  // doesn't fit
 
-  if (_g_opentop - slidemo->z < slidemo->height)
+  if (_g_opentop - slidemo->z < P_Height(slidemo))
     goto isblocking;  // mobj is too high
 
   if (_g_openbottom - slidemo->z > 24*FRACUNIT )
@@ -617,14 +617,14 @@ static void P_ZMovement(mobj_t* mo)
         P_Ext(mo)->momz -= GRAVITY;
       }
 
-  if (mo->z + mo->height > mo->ceilingz)
+  if (mo->z + P_Height(mo) > mo->ceilingz)
     {
     // hit the ceiling
 
     if (P_Ext(mo)->momz > 0)
       P_Ext(mo)->momz = 0;
 
-    mo->z = mo->ceilingz - mo->height;
+    mo->z = mo->ceilingz - P_Height(mo);
 
     if ( (mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP) )
       {
@@ -725,6 +725,15 @@ mobj_t* P_MobjOfThinker(thinker_t* th)
 fixed_t PUREFUNC P_Radius(const mobj_t* mobj)
 {
     return (mobj->flags & MF_CORPSE) && mobj->state == S_GIBS ? 0 : mobjinfo[mobj->type].radius;
+}
+
+
+fixed_t PUREFUNC P_Height(const mobj_t* mobj)
+{
+    if (!(mobj->flags & MF_CORPSE))
+        return mobjinfo[mobj->type].height;
+
+    return mobj->state == S_GIBS ? 0 : mobjinfo[mobj->type].height >> 2;
 }
 
 
@@ -966,7 +975,6 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
     mobj->type = type;
     mobj->x = x;
     mobj->y = y;
-    mobj->height = info->height;                                      // phares
     mobj->flags |= info->flags;
 
     if (mobj->flags & MF_STATIC)
@@ -1003,7 +1011,7 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
     mobj->ceilingz = SEC_CEILINGHEIGHT(P_SubsectorSector(mobj->subsector));
 
     mobj->z = z == ONFLOORZ ? mobj->floorz : z == ONCEILINGZ ?
-                                  mobj->ceilingz - mobj->height : z;
+                                  mobj->ceilingz - P_Height(mobj) : z;
 
     if (ext)
     {

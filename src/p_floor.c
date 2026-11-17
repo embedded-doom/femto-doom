@@ -93,11 +93,11 @@ static boolean P_ThingHeightClip(mobj_t* thing)
 
   // don't adjust a floating monster unless forced to
 
-    if (thing->z+thing->height > thing->ceilingz)
-      thing->z = thing->ceilingz - thing->height;
+    if (thing->z+P_Height(thing) > thing->ceilingz)
+      thing->z = thing->ceilingz - P_Height(thing);
     }
 
-  return thing->ceilingz - thing->floorz >= thing->height;
+  return thing->ceilingz - thing->floorz >= P_Height(thing);
 }
 
 
@@ -135,7 +135,6 @@ static void PIT_ChangeSector(mobj_t* thing)
     P_SetMobjState (thing, S_GIBS);
 
     thing->flags &= ~MF_SOLID;
-    thing->height = 0;
     return;
     }
 
