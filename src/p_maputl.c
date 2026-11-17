@@ -61,11 +61,7 @@ fixed_t _g_lowfloor;
 divline_t _g_trace;
 
 
-// 1/11/98 killough: Intercept limit removed
-#if !defined MAX_INTERCEPTS
-#define MAX_INTERCEPTS 64
-#endif
-static intercept_t intercepts[MAX_INTERCEPTS];
+static intercept_t* intercepts;
 static intercept_t* intercept_p;
 
 
@@ -1369,6 +1365,7 @@ boolean P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2,
   int16_t     count;
 
   P_NextValidCount();
+  intercepts = R_Intercepts();
   intercept_p = intercepts;
 
   if (!((x1-_g_bmaporgx)&(MAPBLOCKSIZE-1)))

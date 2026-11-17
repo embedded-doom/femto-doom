@@ -104,7 +104,16 @@ static fixed_t R_SilHeight(int16_t h)
 #define MAX_DRAWSEGS   128
 #endif
 
-static drawseg_t _s_drawsegs[MAX_DRAWSEGS];
+// The game's tic and the 3D view take turns with this memory.
+static union
+{
+    drawseg_t   drawsegs[MAX_DRAWSEGS];
+    intercept_t intercepts[MAX_INTERCEPTS];
+} scratch;
+
+static boolean rendering;
+
+#define _s_drawsegs scratch.drawsegs
 
 
 #if !defined MAX_OPENINGS
@@ -2438,8 +2447,19 @@ static void R_SetupFrame (player_t *player)
 //
 // R_RenderView
 //
+intercept_t* R_Intercepts(void)
+{
+    if (rendering)
+        I_Error("R_Intercepts: while the view is drawn");
+
+    return scratch.intercepts;
+}
+
+
 void R_RenderPlayerView (player_t* player)
 {
+    rendering = true;
+
     R_SetupFrame (player);
 
     // Clear buffers.
@@ -2457,6 +2477,8 @@ void R_RenderPlayerView (player_t* player)
     R_FreeSkyPatch ();
 
     R_DrawMasked ();
+
+    rendering = false;
 }
 
 

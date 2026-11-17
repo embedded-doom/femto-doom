@@ -69,6 +69,13 @@ typedef struct {
   } d;
 } intercept_t;
 
+#if !defined MAX_INTERCEPTS
+#define MAX_INTERCEPTS 64
+#endif
+
+// MAX_INTERCEPTS intercepts, sharing memory with the 3D view's, so not while it is drawn.
+intercept_t* R_Intercepts(void);
+
 // A map thing that was asleep when its intercept was added; it wakes when traversed.
 #define INTERCEPT_SLEEPER 2
 
