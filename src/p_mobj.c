@@ -282,14 +282,14 @@ static void P_SlideMove(mobj_t* mo)
       // trace along the three leading corners
 
       if (P_Ext(mo)->momx > 0)
-  leadx = mo->x + mo->radius, trailx = mo->x - mo->radius;
+  leadx = mo->x + P_Radius(mo), trailx = mo->x - P_Radius(mo);
       else
-  leadx = mo->x - mo->radius, trailx = mo->x + mo->radius;
+  leadx = mo->x - P_Radius(mo), trailx = mo->x + P_Radius(mo);
 
       if (P_Ext(mo)->momy > 0)
-  leady = mo->y + mo->radius, traily = mo->y - mo->radius;
+  leady = mo->y + P_Radius(mo), traily = mo->y - P_Radius(mo);
       else
-  leady = mo->y - mo->radius, traily = mo->y + mo->radius;
+  leady = mo->y - P_Radius(mo), traily = mo->y + P_Radius(mo);
 
       bestslidefrac = FRACUNIT+1;
 
@@ -722,6 +722,12 @@ mobj_t* P_MobjOfThinker(thinker_t* th)
 }
 
 
+fixed_t PUREFUNC P_Radius(const mobj_t* mobj)
+{
+    return (mobj->flags & MF_CORPSE) && mobj->state == S_GIBS ? 0 : mobjinfo[mobj->type].radius;
+}
+
+
 int16_t P_Health(mobj_t* mobj)
 {
     return mobj->flags & MF_STATIC ? 0 : P_Ext(mobj)->health;
@@ -960,7 +966,6 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
     mobj->type = type;
     mobj->x = x;
     mobj->y = y;
-    mobj->radius = info->radius;
     mobj->height = info->height;                                      // phares
     mobj->flags |= info->flags;
 

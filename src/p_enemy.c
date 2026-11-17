@@ -239,10 +239,10 @@ static boolean PIT_AvoidDropoff(const line_t* line)
 
 static boolean P_AvoidDropoff(mobj_t* actor)
 {
-  int16_t yh=((_g_tmbbox[BOXTOP]   = actor->y+actor->radius)-_g_bmaporgy)>>MAPBLOCKSHIFT;
-  int16_t yl=((_g_tmbbox[BOXBOTTOM]= actor->y-actor->radius)-_g_bmaporgy)>>MAPBLOCKSHIFT;
-  int16_t xh=((_g_tmbbox[BOXRIGHT] = actor->x+actor->radius)-_g_bmaporgx)>>MAPBLOCKSHIFT;
-  int16_t xl=((_g_tmbbox[BOXLEFT]  = actor->x-actor->radius)-_g_bmaporgx)>>MAPBLOCKSHIFT;
+  int16_t yh=((_g_tmbbox[BOXTOP]   = actor->y+P_Radius(actor))-_g_bmaporgy)>>MAPBLOCKSHIFT;
+  int16_t yl=((_g_tmbbox[BOXBOTTOM]= actor->y-P_Radius(actor))-_g_bmaporgy)>>MAPBLOCKSHIFT;
+  int16_t xh=((_g_tmbbox[BOXRIGHT] = actor->x+P_Radius(actor))-_g_bmaporgx)>>MAPBLOCKSHIFT;
+  int16_t xl=((_g_tmbbox[BOXLEFT]  = actor->x-P_Radius(actor))-_g_bmaporgx)>>MAPBLOCKSHIFT;
   int16_t bx, by;
 
   floorz = actor->z;            // remember floor height

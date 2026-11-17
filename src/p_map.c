@@ -141,7 +141,7 @@ static boolean PIT_StompThing(mobj_t* thing)
   if (!(thing->flags & MF_SHOOTABLE)) // Can't shoot it? Can't stomp it!
     return true;
 
-  blockdist = thing->radius + tmthing->radius;
+  blockdist = P_Radius(thing) + P_Radius(tmthing);
 
   if (D_abs(thing->x - tmx) >= blockdist || D_abs(thing->y - tmy) >= blockdist)
     return true; // didn't hit it
@@ -181,10 +181,10 @@ boolean P_TeleportMove(mobj_t* thing, fixed_t x, fixed_t y, boolean boss)
   tmx = x;
   tmy = y;
 
-  _g_tmbbox[BOXTOP]    = y + tmthing->radius;
-  _g_tmbbox[BOXBOTTOM] = y - tmthing->radius;
-  _g_tmbbox[BOXRIGHT]  = x + tmthing->radius;
-  _g_tmbbox[BOXLEFT]   = x - tmthing->radius;
+  _g_tmbbox[BOXTOP]    = y + P_Radius(tmthing);
+  _g_tmbbox[BOXBOTTOM] = y - P_Radius(tmthing);
+  _g_tmbbox[BOXRIGHT]  = x + P_Radius(tmthing);
+  _g_tmbbox[BOXLEFT]   = x - P_Radius(tmthing);
 
   newsubsec = R_PointInSubsector (x,y);
   _g_ceilingline = NULL;
@@ -330,7 +330,7 @@ static boolean PIT_CheckThing(mobj_t* thing)
   if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE)))
     return true;
 
-  blockdist = thing->radius + tmthing->radius;
+  blockdist = P_Radius(thing) + P_Radius(tmthing);
 
   if (D_abs(thing->x - tmx) >= blockdist || D_abs(thing->y - tmy) >= blockdist)
     return true; // didn't hit it
@@ -456,10 +456,10 @@ boolean P_CheckPosition(mobj_t* thing, fixed_t x, fixed_t y)
   tmx = x;
   tmy = y;
 
-  _g_tmbbox[BOXTOP] = y + tmthing->radius;
-  _g_tmbbox[BOXBOTTOM] = y - tmthing->radius;
-  _g_tmbbox[BOXRIGHT] = x + tmthing->radius;
-  _g_tmbbox[BOXLEFT] = x - tmthing->radius;
+  _g_tmbbox[BOXTOP] = y + P_Radius(tmthing);
+  _g_tmbbox[BOXBOTTOM] = y - P_Radius(tmthing);
+  _g_tmbbox[BOXRIGHT] = x + P_Radius(tmthing);
+  _g_tmbbox[BOXLEFT] = x - P_Radius(tmthing);
 
   newsubsec = R_PointInSubsector (x,y);
   _g_ceilingline = NULL;
@@ -1142,7 +1142,7 @@ static boolean PIT_RadiusAttack (mobj_t* thing)
   dy = D_abs(thing->y - bombspot->y);
 
   dist = dx>dy ? dx : dy;
-  dist = (dist - thing->radius) >> FRACBITS;
+  dist = (dist - P_Radius(thing)) >> FRACBITS;
 
   if (dist < 0)
   dist = 0;
@@ -1423,10 +1423,10 @@ void P_CreateSecNodeList(mobj_t* thing)
   tmx = thing->x;
   tmy = thing->y;
 
-  _g_tmbbox[BOXTOP]    = thing->y + tmthing->radius;
-  _g_tmbbox[BOXBOTTOM] = thing->y - tmthing->radius;
-  _g_tmbbox[BOXRIGHT]  = thing->x + tmthing->radius;
-  _g_tmbbox[BOXLEFT]   = thing->x - tmthing->radius;
+  _g_tmbbox[BOXTOP]    = thing->y + P_Radius(tmthing);
+  _g_tmbbox[BOXBOTTOM] = thing->y - P_Radius(tmthing);
+  _g_tmbbox[BOXRIGHT]  = thing->x + P_Radius(tmthing);
+  _g_tmbbox[BOXLEFT]   = thing->x - P_Radius(tmthing);
 
   P_NextValidCount(); // used to make sure we only process a line once
 

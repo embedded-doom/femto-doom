@@ -129,11 +129,13 @@ static void PIT_ChangeSector(mobj_t* thing)
 
   if (thing->flags & MF_STATIC ? (thing->flags & MF_CORPSE) : P_Ext(thing)->health <= 0)
     {
+    if (!(thing->flags & MF_CORPSE))
+      I_Error("PIT_ChangeSector: gibs of a live thing %i", thing->type);
+
     P_SetMobjState (thing, S_GIBS);
 
     thing->flags &= ~MF_SOLID;
     thing->height = 0;
-    thing->radius = 0;
     return;
     }
 

@@ -476,7 +476,6 @@ boolean P_SpawnLoadStatic(fixed_t x, fixed_t y, mobjtype_t type)
   mobj.type   = type;
   mobj.x      = x;
   mobj.y      = y;
-  mobj.radius = info->radius;
   mobj.height = info->height;
   mobj.flags  = info->flags | MF_STATIC;
   if (mobj.flags & (MF_SHOOTABLE | MF_MISSILE | MF_COUNTKILL))
@@ -615,7 +614,6 @@ static void P_StaticMobj(int16_t t, int16_t slot, const loadthing_t* lt, mobj_t*
   }
   else
     P_LoadThingHeights(t, lt->subsector, mobj);
-  mobj->radius    = info->radius;
   mobj->height    = info->height;
   mobj->flags     = info->flags | MF_STATIC | MF_INPLACE | (lt->angle & 0x80 ? MF_AMBUSH : 0);
   mobj->state     = info->spawnstate;
@@ -688,7 +686,6 @@ static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
   mobj->sprev     = t;
   mobj->subsector = lt.subsector;
   P_LoadThingHeights(t, lt.subsector, mobj);
-  mobj->radius    = info->radius;
   mobj->height    = info->height;
   mobj->flags     = info->flags | pooled | MF_INPLACE | (lt.angle & 0x80 ? MF_AMBUSH : 0);
   mobj->state     = info->spawnstate + (rec >> 4);
@@ -1280,17 +1277,17 @@ static boolean PIT_AddThingIntercepts(mobj_t* thing)
   // check a corner to corner crossection for hit
   if ((_g_trace.dx ^ _g_trace.dy) > 0)
     {
-      x1 = thing->x - thing->radius;
-      y1 = thing->y + thing->radius;
-      x2 = thing->x + thing->radius;
-      y2 = thing->y - thing->radius;
+      x1 = thing->x - P_Radius(thing);
+      y1 = thing->y + P_Radius(thing);
+      x2 = thing->x + P_Radius(thing);
+      y2 = thing->y - P_Radius(thing);
     }
   else
     {
-      x1 = thing->x - thing->radius;
-      y1 = thing->y - thing->radius;
-      x2 = thing->x + thing->radius;
-      y2 = thing->y + thing->radius;
+      x1 = thing->x - P_Radius(thing);
+      y1 = thing->y - P_Radius(thing);
+      x2 = thing->x + P_Radius(thing);
+      y2 = thing->y + P_Radius(thing);
     }
 
   s1 = P_PointOnDivlineSide (x1, y1, &_g_trace);
