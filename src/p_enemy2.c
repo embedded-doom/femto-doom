@@ -100,7 +100,7 @@ static boolean P_Move(mobj_t* actor)
     }
 
   /* fall more slowly, under gravity */
-  actor->z = actor->floorz;
+  actor->z = P_FromQuarters(actor->floorz);
 
   return true;
 }

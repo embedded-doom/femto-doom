@@ -573,15 +573,15 @@ static void P_LoadThingHeights(int16_t t, int16_t subsector, mobj_t* mobj)
   if (P_SubsectorSector(subsector) - _g_sectors == changesector && !P_OwnNodeVisited(t, changesector))
   {
     mobj->z        = changefloor;
-    mobj->floorz   = changefloor;
-    mobj->ceilingz = changeceiling;
+    mobj->floorz   = P_ToQuarters(changefloor);
+    mobj->ceilingz = P_ToQuarters(changeceiling);
   }
   else
   {
     const sector_t* sector = P_SubsectorSector(subsector);
     mobj->z        = SEC_FLOORHEIGHT(sector);
-    mobj->floorz   = SEC_FLOORHEIGHT(sector);
-    mobj->ceilingz = SEC_CEILINGHEIGHT(sector);
+    mobj->floorz   = P_ToQuarters(SEC_FLOORHEIGHT(sector));
+    mobj->ceilingz = P_ToQuarters(SEC_CEILINGHEIGHT(sector));
   }
 }
 
@@ -608,8 +608,8 @@ static void P_StaticMobj(int16_t t, int16_t slot, const loadthing_t* lt, mobj_t*
     int16_t i;
     const staticz_t* c = P_StaticZ(slot, &i);
     mobj->z        = c->z[i];
-    mobj->floorz   = c->floorz[i];
-    mobj->ceilingz = c->ceilingz[i];
+    mobj->floorz   = P_ToQuarters(c->floorz[i]);
+    mobj->ceilingz = P_ToQuarters(c->ceilingz[i]);
   }
   else
     P_LoadThingHeights(t, lt->subsector, mobj);
@@ -628,12 +628,12 @@ static void P_KeepStaticZ(int16_t slot, const mobj_t* mobj, const fixed_t* old)
     c = P_StaticZ(slot, &i);
   else
   {
-    if (mobj->z == old[0] && mobj->floorz == old[1] && mobj->ceilingz == old[2])
+    if (mobj->z == old[0] && P_FromQuarters(mobj->floorz) == old[1] && P_FromQuarters(mobj->ceilingz) == old[2])
       return;
 
     const sector_t* sector = P_SubsectorSector(mobj->subsector);
-    if (mobj->z == SEC_FLOORHEIGHT(sector) && mobj->floorz == SEC_FLOORHEIGHT(sector)
-        && mobj->ceilingz == SEC_CEILINGHEIGHT(sector))
+    if (mobj->z == SEC_FLOORHEIGHT(sector) && P_FromQuarters(mobj->floorz) == SEC_FLOORHEIGHT(sector)
+        && P_FromQuarters(mobj->ceilingz) == SEC_CEILINGHEIGHT(sector))
       return;
 
     i = numstaticz % STATICZCHUNK;
@@ -652,8 +652,8 @@ static void P_KeepStaticZ(int16_t slot, const mobj_t* mobj, const fixed_t* old)
     SETBIT(staticmoved, slot);
   }
   c->z[i]        = mobj->z;
-  c->floorz[i]   = mobj->floorz;
-  c->ceilingz[i] = mobj->ceilingz;
+  c->floorz[i]   = P_FromQuarters(mobj->floorz);
+  c->ceilingz[i] = P_FromQuarters(mobj->ceilingz);
 }
 
 //
@@ -690,7 +690,7 @@ static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
   mobj->sprite    = states[mobj->state].sprite;
   mobj->frame     = states[mobj->state].frame;
   mobj->type      = lt.type;
-  ext->dropoffz     = mobj->floorz;
+  ext->dropoffz     = P_FromQuarters(mobj->floorz);
   ext->health       = info->spawnhealth;
   ext->reactiontime = _g_gameskill != sk_nightmare ? info->reactiontime : 0;
   ext->loadthing    = t + 1;
@@ -827,7 +827,7 @@ static boolean P_VisitLoadThing(int16_t t, boolean func(mobj_t*))
 
   mobj_t mobj;
   P_StaticMobj(t, slot, &lt, &mobj);
-  const fixed_t old[3] = { mobj.z, mobj.floorz, mobj.ceilingz };
+  const fixed_t old[3] = { mobj.z, P_FromQuarters(mobj.floorz), P_FromQuarters(mobj.ceilingz) };
   boolean r = func(&mobj);
   if (BIT(inplace, t))
     P_KeepStaticZ(slot, &mobj, old);

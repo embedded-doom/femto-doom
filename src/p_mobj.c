@@ -479,7 +479,7 @@ static void P_XYMovement(mobj_t* mo)
     // slow down
 
     /* no friction for missiles or skulls ever, no friction when airborne */
-    if (mo->flags & MF_MISSILE || mo->z > mo->floorz)
+    if (mo->flags & MF_MISSILE || mo->z > P_FromQuarters(mo->floorz))
         return;
 
     /* killough 8/11/98: add bouncers
@@ -489,7 +489,7 @@ static void P_XYMovement(mobj_t* mo)
     if ((mo->flags & MF_CORPSE) &&
             (P_Ext(mo)->momx > FRACUNIT/4 || P_Ext(mo)->momx < -FRACUNIT/4 ||
              P_Ext(mo)->momy > FRACUNIT/4 || P_Ext(mo)->momy < -FRACUNIT/4) &&
-            mo->floorz != SEC_FLOORHEIGHT(P_SubsectorSector(mo->subsector)))
+            P_FromQuarters(mo->floorz) != SEC_FLOORHEIGHT(P_SubsectorSector(mo->subsector)))
         return;  // do not stop sliding if halfway off a step with some momentum
 
     // killough 11/98:
@@ -569,9 +569,9 @@ static void P_ZMovement(mobj_t* mo)
 
     if (P_MobjIsPlayer(mo) &&
             P_MobjIsPlayer(mo)->mo == mo &&  // killough 5/12/98: exclude voodoo dolls
-            mo->z < mo->floorz)
+            mo->z < P_FromQuarters(mo->floorz))
     {
-        P_MobjIsPlayer(mo)->viewheight -= mo->floorz-mo->z;
+        P_MobjIsPlayer(mo)->viewheight -= P_FromQuarters(mo->floorz)-mo->z;
         P_MobjIsPlayer(mo)->deltaviewheight = (VIEWHEIGHT - P_MobjIsPlayer(mo)->viewheight)>>3;
     }
 
@@ -581,7 +581,7 @@ static void P_ZMovement(mobj_t* mo)
 
   // clip movement
 
-  if (mo->z <= mo->floorz)
+  if (mo->z <= P_FromQuarters(mo->floorz))
     {
     // hit the floor
 
@@ -601,7 +601,7 @@ static void P_ZMovement(mobj_t* mo)
       }
   P_Ext(mo)->momz = 0;
       }
-    mo->z = mo->floorz;
+    mo->z = P_FromQuarters(mo->floorz);
 
     if ( (mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP) )
       {
@@ -617,14 +617,14 @@ static void P_ZMovement(mobj_t* mo)
         P_Ext(mo)->momz -= GRAVITY;
       }
 
-  if (mo->z + P_Height(mo) > mo->ceilingz)
+  if (mo->z + P_Height(mo) > P_FromQuarters(mo->ceilingz))
     {
     // hit the ceiling
 
     if (P_Ext(mo)->momz > 0)
       P_Ext(mo)->momz = 0;
 
-    mo->z = mo->ceilingz - P_Height(mo);
+    mo->z = P_FromQuarters(mo->ceilingz) - P_Height(mo);
 
     if ( (mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP) )
       {
@@ -737,6 +737,16 @@ fixed_t PUREFUNC P_Height(const mobj_t* mobj)
 }
 
 
+int16_t P_ToQuarters(fixed_t z)
+{
+    const fixed_t quarters = z / (FRACUNIT >> 2);
+    if (quarters * (FRACUNIT >> 2) != z || quarters != (int16_t)quarters)
+        I_Error("P_ToQuarters: %li", (long)z);
+
+    return quarters;
+}
+
+
 int16_t P_Health(mobj_t* mobj)
 {
     return mobj->flags & MF_STATIC ? 0 : P_Ext(mobj)->health;
@@ -799,7 +809,7 @@ void P_MobjThinker (thinker_t* th)
             return;       // killough - mobj was removed
     }
 
-    if (mobj->z != mobj->floorz || ext->momz)
+    if (mobj->z != P_FromQuarters(mobj->floorz) || ext->momz)
     {
         P_ZMovement(mobj);
         if (th->function != P_MobjThinker) // cph - Must've been removed
@@ -829,7 +839,7 @@ void P_MobjThinker (thinker_t* th)
 
         if (!_g_respawnmonsters)
         {
-            if ((mobj->flags & MF_CORPSE) && !ext->momz && mobj->z == mobj->floorz && !(ext->momx | ext->momy))
+            if ((mobj->flags & MF_CORPSE) && !ext->momz && mobj->z == P_FromQuarters(mobj->floorz) && !(ext->momx | ext->momy))
                 P_SettleCorpse(ext);
             return;
         }
@@ -1007,15 +1017,15 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
 
     P_SetThingPosition (mobj);
 
-    mobj->floorz   = SEC_FLOORHEIGHT(P_SubsectorSector(mobj->subsector));
-    mobj->ceilingz = SEC_CEILINGHEIGHT(P_SubsectorSector(mobj->subsector));
+    mobj->floorz   = P_ToQuarters(SEC_FLOORHEIGHT(P_SubsectorSector(mobj->subsector)));
+    mobj->ceilingz = P_ToQuarters(SEC_CEILINGHEIGHT(P_SubsectorSector(mobj->subsector)));
 
-    mobj->z = z == ONFLOORZ ? mobj->floorz : z == ONCEILINGZ ?
-                                  mobj->ceilingz - P_Height(mobj) : z;
+    mobj->z = z == ONFLOORZ ? P_FromQuarters(mobj->floorz) : z == ONCEILINGZ ?
+                                  P_FromQuarters(mobj->ceilingz) - P_Height(mobj) : z;
 
     if (ext)
     {
-        ext->dropoffz = mobj->floorz;   /* killough 11/98: for tracking dropoffs */
+        ext->dropoffz = P_FromQuarters(mobj->floorz);   /* killough 11/98: for tracking dropoffs */
         ext->thinker.function = P_ThinkerFunctionForType(type, mobj);
         ext->target = ext->lastenemy = 0;
         P_AddThinker (&ext->thinker);

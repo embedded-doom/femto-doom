@@ -167,9 +167,9 @@ typedef struct mobj_s
     // a linked list of sectors where this object appears
     zref_t              touching_sectorlist;    // msecnode_t
 
-    // The closest interval over all contacted Sectors.
-    fixed_t             floorz;
-    fixed_t             ceilingz;
+    // The closest interval over all contacted Sectors, in quarter units as sector heights are.
+    int16_t             floorz;
+    int16_t             ceilingz;
 
     // For movement checking the radius and height are the type's: the height a quarter on a
     // corpse, both 0 once gibbed.
@@ -187,7 +187,7 @@ typedef struct mobj_s
     mobjtype_t          type;
 } mobj_t;
 
-typedef char assertMobjSize[sizeof(mobj_t) == 48 ? 1 : -1];
+typedef char assertMobjSize[sizeof(mobj_t) == 44 ? 1 : -1];
 
 // A thing of type MT_MISC0 or later lives in the static pool as a bare
 // mobj_t with MF_STATIC set. Every other thing is the mo of an mobjext_t:
@@ -238,7 +238,7 @@ typedef struct
     mobj_t              mo;
 } mobjext_t;
 
-typedef char assertMobjExtSize[sizeof(void*) != 4 || sizeof(mobjext_t) == 92 ? 1 : -1];
+typedef char assertMobjExtSize[sizeof(void*) != 4 || sizeof(mobjext_t) == 88 ? 1 : -1];
 
 static inline mobj_t* P_Mobj(zref_t ref)
 {
@@ -268,6 +268,12 @@ int16_t P_Health(mobj_t* mobj);
 mobj_t* P_MobjOfThinker(thinker_t* th);
 fixed_t PUREFUNC P_Radius(const mobj_t* mobj);
 fixed_t PUREFUNC P_Height(const mobj_t* mobj);
+int16_t P_ToQuarters(fixed_t z);
+
+static inline fixed_t P_FromQuarters(int16_t z)
+{
+    return (fixed_t)z * (FRACUNIT >> 2);
+}
 void    P_RunStatics(void);
 
 void    P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);

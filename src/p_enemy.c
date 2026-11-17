@@ -275,8 +275,8 @@ void P_NewChaseDir(mobj_t* actor)
     // killough 8/8/98: sometimes move away from target, keeping distance
     // Take advantage over an enemy without missiles, by keeping distance
 
-    if (actor->floorz - P_Ext(actor)->dropoffz > FRACUNIT*24 &&
-            actor->z <= actor->floorz &&
+    if (P_FromQuarters(actor->floorz) - P_Ext(actor)->dropoffz > FRACUNIT*24 &&
+            actor->z <= P_FromQuarters(actor->floorz) &&
             !(actor->flags & MF_DROPOFF) &&
             P_AvoidDropoff(actor)) /* Move away from dropoff */
     {

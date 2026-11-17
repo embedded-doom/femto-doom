@@ -129,8 +129,8 @@ static void P_CalcHeight (player_t* player)
     {
     player->viewz = player->mo->z + VIEWHEIGHT;
 
-    if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-      player->viewz = player->mo->ceilingz-4*FRACUNIT;
+    if (player->viewz > P_FromQuarters(player->mo->ceilingz)-4*FRACUNIT)
+      player->viewz = P_FromQuarters(player->mo->ceilingz)-4*FRACUNIT;
 
 // The following line was in the Id source and appears      // phares 2/25/98
 // to be a bug. player->viewz is checked in a similar
@@ -172,8 +172,8 @@ static void P_CalcHeight (player_t* player)
 
   player->viewz = player->mo->z + player->viewheight + bob;
 
-  if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-    player->viewz = player->mo->ceilingz-4*FRACUNIT;
+  if (player->viewz > P_FromQuarters(player->mo->ceilingz)-4*FRACUNIT)
+    player->viewz = P_FromQuarters(player->mo->ceilingz)-4*FRACUNIT;
   }
 
 
@@ -190,7 +190,7 @@ static void P_MovePlayer (player_t* player)
   mobj_t* mo = player->mo;
 
   mo->angle += ((int32_t)cmd->angleturn) << 16;
-  onground = mo->z <= mo->floorz;
+  onground = mo->z <= P_FromQuarters(mo->floorz);
 
   // killough 10/98:
   //
@@ -243,7 +243,7 @@ static void P_DeathThink (player_t* player)
     player->viewheight = 6*FRACUNIT;
 
   player->deltaviewheight = 0;
-  onground = (player->mo->z <= player->mo->floorz);
+  onground = (player->mo->z <= P_FromQuarters(player->mo->floorz));
   P_CalcHeight (player);
 
   if (player->attacker && player->attacker != player->mo)

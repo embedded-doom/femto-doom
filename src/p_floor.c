@@ -68,7 +68,7 @@ static boolean P_ThingHeightClip(mobj_t* thing)
 {
   boolean   onfloor;
 
-  onfloor = (thing->z == thing->floorz);
+  onfloor = (thing->z == P_FromQuarters(thing->floorz));
 
   P_CheckPosition (thing, thing->x, thing->y);
 
@@ -76,8 +76,8 @@ static boolean P_ThingHeightClip(mobj_t* thing)
    * killough 11/98: Answer: see below (upset balance if hanging off ledge)
    */
 
-  thing->floorz = _g_tmfloorz;
-  thing->ceilingz = _g_tmceilingz;
+  thing->floorz = P_ToQuarters(_g_tmfloorz);
+  thing->ceilingz = P_ToQuarters(_g_tmceilingz);
   if (!(thing->flags & MF_STATIC))
     P_Ext(thing)->dropoffz = _g_tmdropoffz;    /* killough 11/98: remember dropoffs */
 
@@ -86,18 +86,18 @@ static boolean P_ThingHeightClip(mobj_t* thing)
 
     // walking monsters rise and fall with the floor
 
-    thing->z = thing->floorz;
+    thing->z = P_FromQuarters(thing->floorz);
     }
   else
     {
 
   // don't adjust a floating monster unless forced to
 
-    if (thing->z+P_Height(thing) > thing->ceilingz)
-      thing->z = thing->ceilingz - P_Height(thing);
+    if (thing->z+P_Height(thing) > P_FromQuarters(thing->ceilingz))
+      thing->z = P_FromQuarters(thing->ceilingz) - P_Height(thing);
     }
 
-  return thing->ceilingz - thing->floorz >= P_Height(thing);
+  return P_FromQuarters(thing->ceilingz) - P_FromQuarters(thing->floorz) >= P_Height(thing);
 }
 
 
