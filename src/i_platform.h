@@ -190,8 +190,9 @@ void W_Fetch(const void* src, void* dst, uint16_t len);
 void DMX_PlaySound(const uint8_t* sound, uint8_t volume);
 
 // A song for one PC speaker voice inside the graphics WAD, or NULL to stop: the pair count
-// (u16), then per pair a tone (u8) as in the sounds and its length in 1/140 s (u8). Sounds play
-// over it while the song goes on. looping does not matter with NULL.
+// (u16), then per pair a tone (u8) as in the sounds and its length in 1/140 s (u8), or a drum hit
+// (u8, 128 + kind: kick, snare, hi-hat or cymbal, other) and 0. Sounds play over it while the song
+// goes on. looping does not matter with NULL.
 void DMX_PlaySong(const uint8_t* song, boolean looping);
 
 // 256 RGB triples, inside the graphics WAD. A platform may hold a new palette back until the

@@ -6,7 +6,8 @@ A song becomes pairs of a tone, as in the PC speaker sounds, and its length in 1
 notes sounding, the one started last plays, of a chord the highest; so the moving part wins over
 held ones. A note struck again starts after a tick of silence. The voice moves up by octaves
 until its low notes reach the speaker's lowest tone; the few notes still out of range move by
-octaves on their own. Percussion is left out.
+octaves on their own. A drum hit becomes a pair of length 0 with a drum instead of a tone, which
+the platform sounds as it can while the song goes on.
 """
 
 from __future__ import annotations
@@ -32,6 +33,12 @@ DIVISORS = (
 )  # fmt: skip
 """The PC's timer divisor of each tone, 0 for silence."""
 PERCUSSION = 15
+DRUM = 128
+"""A drum is DRUM plus its kind: kick, snare, hi-hat or cymbal, other."""
+KICK, SNARE, CYMBAL, OTHER = range(4)
+DRUMS = {35: KICK, 36: KICK, 37: SNARE, 38: SNARE, 39: SNARE, 40: SNARE} | dict.fromkeys(
+    (42, 44, 46, 49, 51, 52, 53, 55, 57, 59), CYMBAL
+)
 LOW_SHARE = 20
 """The song moves up until all but 1 in this many of its notes are in range."""
 MAX_TICKS = 255
@@ -137,8 +144,28 @@ def voice(events: list[Event], end: int) -> list[Stretch]:
     return stretches
 
 
+def with_drums(pairs: list[list[int]], events: list[Event]) -> list[list[int]]:
+    """`pairs` with a drum pair at each tick a drum is hit, splitting the pair it falls in."""
+    hits = sorted({(e.tick, DRUM + DRUMS.get(e.note, OTHER)) for e in events if e.channel == PERCUSSION and e.on})
+    result = []
+    tick = 0
+    hit = 0
+    for current, ticks in pairs:
+        end = tick + ticks
+        while hit < len(hits) and hits[hit][0] < end:
+            at, drum = hits[hit]
+            if at > tick:
+                result.append([current, at - tick])
+                tick = at
+            result.append([drum, 0])
+            hit += 1
+        result.append([current, end - tick])
+        tick = end
+    return result
+
+
 def convert(mus: bytes) -> bytes:
-    """The song as a pair count (u16), then per pair a tone (u8) and its ticks (u8)."""
+    """The song as a pair count (u16), then per pair a tone or drum (u8) and its ticks (u8)."""
     events, end = score(mus)
     stretches = voice([event for event in events if event.channel != PERCUSSION], end)
     notes = [s.note for s in stretches if s.note is not None and s.ticks > 0]
@@ -153,4 +180,5 @@ def convert(mus: bytes) -> bytes:
             pairs[-1][1] -= 1
             append(pairs, 0, 1)
         append(pairs, current, stretch.ticks)
+    pairs = with_drums(pairs, events)
     return struct.pack("<H", len(pairs)) + b"".join(bytes(pair) for pair in pairs)

@@ -7,7 +7,7 @@ import struct
 import pytest
 
 from femtowad.graphics import SOUNDS, add_audio
-from femtowad.music import DIVISORS, SONGS, convert, score, tone
+from femtowad.music import CYMBAL, DIVISORS, DRUM, KICK, OTHER, SONGS, convert, score, tone
 from femtowad.wad import Lump, Wad
 
 
@@ -83,6 +83,16 @@ def test_audio_consecutive_in_engine_order() -> None:
     wad = Wad([Lump("PLAYPAL", b"")])
     add_audio(wad, iwad)
     assert [lump.name for lump in wad] == ["PLAYPAL", *sounds, *songs]
+
+
+def test_drums_split_the_tone() -> None:
+    song = convert(mus(0x10, 69, 0x9F, 36, 2, 0x1F, 42, 0x9F, 75, 3, 0x00, 69))
+    assert pairs(song) == [(DRUM + KICK, 0), (tone(69), 2), (DRUM + CYMBAL, 0), (DRUM + OTHER, 0), (tone(69), 3)]
+
+
+def test_drums_at_the_same_tick_once() -> None:
+    song = convert(mus(0x10, 69, 0x1F, 36, 0x9F, 35, 4, 0x00, 69))
+    assert pairs(song) == [(DRUM + KICK, 0), (tone(69), 4)]
 
 
 def test_long_notes_split() -> None:

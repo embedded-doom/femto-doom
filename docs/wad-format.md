@@ -40,7 +40,7 @@ Values are i16 unless noted.
 | `FLOOR4_8` | finale background: 64 × 64 raw pixels |
 | `DEMO3` | the attract-mode demo |
 | `DPPISTOL` … | the PC speaker sounds, consecutive in the order of the `sfx_` numbers in `sounds.h`, as in Doom: 0 (u16), the tone count (u16), a tone (u8) per 1/140 s |
-| `D_E1M1` … | the songs for one PC speaker voice, consecutive in the order of the `mus_` numbers in `sounds.h`: pair count (u16), then per pair a tone (u8) and its length in 1/140 s (u8) |
+| `D_E1M1` … | the songs for one PC speaker voice, consecutive in the order of the `mus_` numbers in `sounds.h`: pair count (u16), then per pair a tone (u8) and its length in 1/140 s (u8), or a drum (u8, 128 + kind: kick, snare, hi-hat or cymbal, other) and 0 |
 | status bar, menu and intermission pictures, sprites, wall patches | Doom's patch format (`patch_t` in [i_platform.h](../src/i_platform.h)); the status bar's scaled as the bar is, walls keep every 4th column, sprites every 2nd, equal columns are stored once |
 
 Other flats, the MIDI music and the sampled sound effects are not in it.
@@ -52,7 +52,8 @@ from 6818 for tone 1 (175 Hz) to 179 for tone 127 (6.7 kHz), about a quarter ton
 table is `DIVISORS` in femtowad's `music.py`.
 
 A song keeps one note at a time: of the notes sounding, the one started last, of a chord the
-highest. A note struck again starts after 1/140 s of silence. The song moves up by whole octaves
+highest. A note struck again starts after 1/140 s of silence. A drum hit is a pair of length 0 at its
+moment, the platform sounds it as it can while the song goes on, or not at all. The song moves up by whole octaves
 until all but 1 in 20 of these notes reach tone 1; the rest move by octaves on their own.
 Percussion is left out.
 
