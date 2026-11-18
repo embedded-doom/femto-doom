@@ -244,6 +244,16 @@ typedef struct staticchunk_s
 
 extern staticchunk_t* _g_staticchunks;
 
+// Dropped items at rest, in chunks allocated as they drop.
+#define RESTCHUNK 8
+typedef struct restchunk_s
+{
+  struct restchunk_s* next;
+  restmobj_t rest[RESTCHUNK];
+} restchunk_t;
+
+extern restchunk_t* _g_restchunks;
+
 
 //******************************************************************************
 //p_switch.c

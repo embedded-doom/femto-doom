@@ -157,6 +157,13 @@ static void PIT_ChangeSector(mobj_t* thing)
   }
 
 
+static boolean PIT_ChangeRest(mobj_t* thing)
+{
+  if (!(thing->flags & MF_NOBLOCKMAP))
+    PIT_ChangeSector(thing);
+  return true;
+}
+
 //
 // P_CheckSector
 // jff 3/19/98 added to just check monsters on the periphery
@@ -193,8 +200,11 @@ static boolean P_CheckSector(sector_t* sector, fixed_t oldfloor, fixed_t oldceil
       if (n->m_sector == sref && !n->visited)               // unprocessed thing found
         {
         n->visited  = true;          // mark thing as processed
-        if (!(P_Mobj(n->m_thing)->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
-          PIT_ChangeSector(P_Mobj(n->m_thing));    // process it
+        mobj_t* thing = P_Mobj(n->m_thing);
+        if (P_Form(thing))
+          P_VisitRest(thing, PIT_ChangeRest);
+        else if (!(thing->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
+          PIT_ChangeSector(thing);    // process it
         found = true;
         break;                 // exit and start over
         }

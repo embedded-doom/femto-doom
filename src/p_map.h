@@ -64,7 +64,7 @@ boolean P_CheckPosition(mobj_t* thing, fixed_t x, fixed_t y);
 void    P_SetSecnodeFirstpoolToNull(void);
 void    P_DelSeclist(void);
 void    P_SetSeclist(msecnode_t* sectorList);
-void    P_CreateSecNodeList(mobj_t*);
+void    P_CreateSecNodeList(mobj_t* thing, zref_t ref);
 void    P_MarkSecNodeLines(mobj_t* thing);
 
 

@@ -1468,6 +1468,13 @@ static void R_ProjectSprite (mobj_t* thing, int16_t lightlevel)
 // killough 9/18/98: add lightlevel as parameter, fixing underwater lighting
 static int16_t spritelight;
 
+static NOINLINE void R_ProjectRest(mobj_t* thing, int16_t lightlevel)
+{
+  restvisit_t visit;
+  P_RestMobj((restmobj_t*)thing, &visit);
+  R_ProjectSprite(&visit.mo, lightlevel);
+}
+
 static boolean R_ProjectLoadThing(mobj_t* thing)
 {
   R_ProjectSprite(thing, spritelight);
@@ -1494,7 +1501,12 @@ static void R_AddSprites(int16_t subsec, int16_t lightlevel)
 
   for (thing = P_Mobj(SEC_THINGS(sec)); thing; thing = P_Mobj(thing->snext))
     if (P_SubsectorSector(thing->subsector) == sec)
-      R_ProjectSprite(thing, lightlevel);
+    {
+      if (P_Form(thing))
+        R_ProjectRest(thing, lightlevel);
+      else
+        R_ProjectSprite(thing, lightlevel);
+    }
 
   spritelight = lightlevel;
   P_SectorLoadThings(sec - _g_sectors, R_ProjectLoadThing);

@@ -343,7 +343,8 @@ static boolean PIT_CheckThing(mobj_t* thing)
   // don't clip against self, of which a map static gets a copy
 
   if (thing == tmthing || ((thing->flags & tmthing->flags & (MF_STATIC | MF_INPLACE)) == (MF_STATIC | MF_INPLACE)
-                           && thing->sprev == tmthing->sprev))
+                           && thing->sprev == tmthing->sprev)
+      || ((thing->flags & tmthing->flags & MF_REST) && P_RestOf(thing) == P_RestOf(tmthing)))
     return true;
 
   // missiles can hit other things
@@ -1227,7 +1228,10 @@ inline static void P_PutSecnode(msecnode_t* node)
 static int16_t loadnodes, numloadnodes;
 static uint16_t keptloadnodes;
 
-static void P_AddSecnode(sector_t* s, mobj_t* thing)
+// What the nodes P_CreateSecNodeList adds refer to.
+static zref_t noderef;
+
+static void P_AddSecnode(sector_t* s)
   {
   msecnode_t* node;
   zref_t sref = Z_Ref(s);
@@ -1237,7 +1241,7 @@ static void P_AddSecnode(sector_t* s, mobj_t* thing)
     {
     if (node->m_sector == sref)   // Already have a node for this sector?
       {
-      node->m_thing = Z_Ref(thing); // Yes. Setting m_thing says 'keep it'.
+      node->m_thing = noderef; // Yes. Setting m_thing says 'keep it'.
       return;
       }
     node = P_Node(node->m_tnext);
@@ -1260,7 +1264,7 @@ static void P_AddSecnode(sector_t* s, mobj_t* thing)
   node->visited = false;
 
   node->m_sector = sref;       // sector
-  node->m_thing  = Z_Ref(thing);     // mobj
+  node->m_thing  = noderef;     // mobj
   node->m_tprev  = 0;    // prev node on Thing thread
   node->m_tnext  = Z_Ref(_s_sector_list);  // next node on Thing thread
   if (_s_sector_list)
@@ -1374,7 +1378,7 @@ static boolean PIT_GetSectors(const line_t* ld)
   // allowed to move to this position, then the sector_list
   // will be attached to the Thing's mobj_t at touching_sectorlist.
 
-  P_AddSecnode(LN_FRONTSECTOR(ld),tmthing);
+  P_AddSecnode(LN_FRONTSECTOR(ld));
 
   /* Don't assume all lines are 2-sided, since some Things
    * like MT_TFOG are allowed regardless of whether their radius takes
@@ -1386,7 +1390,7 @@ static boolean PIT_GetSectors(const line_t* ld)
    * cph - DEMOSYNC? */
 
   if (LN_BACKSECTOR(ld) && LN_BACKSECTOR(ld) != LN_FRONTSECTOR(ld))
-    P_AddSecnode(LN_BACKSECTOR(ld), tmthing);
+    P_AddSecnode(LN_BACKSECTOR(ld));
 
   return true;
   }
@@ -1397,7 +1401,7 @@ static boolean PIT_GetSectors(const line_t* ld)
 // P_CreateSecNodeList alters/creates the sector_list that shows what sectors
 // the object resides in.
 
-void P_CreateSecNodeList(mobj_t* thing)
+void P_CreateSecNodeList(mobj_t* thing, zref_t ref)
 {
   mobj_t* saved_tmthing = tmthing; /* cph - see comment at func end */
 
@@ -1414,6 +1418,7 @@ void P_CreateSecNodeList(mobj_t* thing)
     }
 
   tmthing = thing;
+  noderef = ref;
 
   int16_t i = P_LoadIndex(thing);
   loadnodes = i >= 0 ? P_LoadNodeFirst(i) : 0;
@@ -1442,7 +1447,7 @@ void P_CreateSecNodeList(mobj_t* thing)
   // Add the sector of the (x,y) point to sector_list.
 
   if (!marklinesonly)
-    P_AddSecnode(P_SubsectorSector(thing->subsector),thing);
+    P_AddSecnode(P_SubsectorSector(thing->subsector));
 
   // Now delete any nodes that won't be used. These are the ones where
   // m_thing is still NULL.
@@ -1488,6 +1493,6 @@ void P_MapEnd(void)
 void P_MarkSecNodeLines(mobj_t* thing)
 {
   marklinesonly = true;
-  P_CreateSecNodeList(thing);
+  P_CreateSecNodeList(thing, 0);
   marklinesonly = false;
 }

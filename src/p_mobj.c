@@ -903,9 +903,140 @@ void P_RunStatics(void)
                 P_CycleState(mobj);
         }
 
+    for (restchunk_t* c = _g_restchunks; c; c = c->next)
+        for (int16_t i = 0; i < RESTCHUNK; i++)
+            if (c->rest[i].bits & REST_REMOVED)
+            {
+                c->rest[i].type = MT_NOTHING;
+                c->rest[i].bits = 0;
+            }
+
     P_RunLoadStatics();
 }
 
+
+
+static restmobj_t* P_NewRest(void)
+{
+    for (restchunk_t* c = _g_restchunks; c; c = c->next)
+        for (int16_t i = RESTCHUNK-1; i >= 0; i--)
+            if (c->rest[i].type == MT_NOTHING)
+                return &c->rest[i];
+
+    restchunk_t* c = Z_MallocLevel(sizeof(*c));
+    for (int16_t i = 0; i < RESTCHUNK; i++)
+        c->rest[i].type = MT_NOTHING;
+    c->next = _g_restchunks;
+    _g_restchunks = c;
+    return &c->rest[RESTCHUNK-1];
+}
+
+static void P_RestLinks(const restmobj_t* rest, zref_t* links)
+{
+    links[0] = rest->snext;
+    links[1] = rest->sprev;
+    links[2] = rest->bnext;
+    links[3] = rest->bprev;
+    links[4] = rest->touching_sectorlist;
+}
+
+// What P_SpawnMobj and P_KillMobj make of an item a monster drops, kept as a resting thing.
+void P_SpawnDrop(fixed_t x, fixed_t y, mobjtype_t type)
+{
+    const mobjinfo_t* info = &mobjinfo[type];
+    const state_t* st = &states[info->spawnstate];
+    if (type < MT_MISC0 || st->tics != -1
+        || (info->flags & (MF_SHOOTABLE | MF_MISSILE | MF_COUNTKILL | MF_NOSECTOR | MF_NOBLOCKMAP)))
+        I_Error("P_SpawnDrop: %i does not rest", type);
+
+    restmobj_t* rest = P_NewRest();
+    mobj_t mobj;
+    memset(&mobj, 0, sizeof(mobj));
+    mobj.type  = type;
+    mobj.x     = x;
+    mobj.y     = y;
+    mobj.flags = MF_STATIC | info->flags;
+
+    P_Random(); // only to call random for compatibiltiy
+
+    mobj.state  = info->spawnstate;
+    mobj.tics   = st->tics;
+    mobj.sprite = st->sprite;
+    mobj.frame  = st->frame;
+
+    P_SetThingPositionAs(&mobj, rest);
+
+    rest->x         = x;
+    rest->y         = y;
+    rest->snext     = mobj.snext;
+    rest->sprev     = mobj.sprev;
+    rest->subsector = mobj.subsector;
+    rest->type      = type | FORM_REST;
+    rest->bits      = 0;
+    rest->bnext     = mobj.bnext;
+    rest->bprev     = mobj.bprev;
+    rest->touching_sectorlist = mobj.touching_sectorlist;
+    rest->floorz    = P_ToQuarters(SEC_FLOORHEIGHT(P_SubsectorSector(mobj.subsector)));
+}
+
+void P_RestMobj(restmobj_t* rest, restvisit_t* visit)
+{
+    const mobjtype_t type = rest->type & ~FORM_MASK;
+    const mobjinfo_t* info = &mobjinfo[type];
+    const state_t* st = &states[info->spawnstate];
+    mobj_t* mobj = &visit->mo;
+    memset(mobj, 0, sizeof(*mobj));
+    mobj->x         = rest->x;
+    mobj->y         = rest->y;
+    mobj->snext     = rest->snext;
+    mobj->sprev     = rest->sprev;
+    mobj->subsector = rest->subsector;
+    mobj->type      = type;
+    mobj->sprite    = st->sprite;
+    mobj->bnext     = rest->bnext;
+    mobj->bprev     = rest->bprev;
+    mobj->z         = P_FromQuarters(rest->floorz);
+    mobj->flags     = info->flags | MF_STATIC | MF_DROPPED | MF_REST;
+    mobj->touching_sectorlist = rest->touching_sectorlist;
+    mobj->floorz    = rest->floorz;
+    mobj->state     = info->spawnstate;
+    mobj->frame     = st->frame;
+    mobj->tics      = st->tics;
+    visit->rest     = rest;
+    P_RestLinks(rest, visit->links);
+}
+
+// Takes back what a visit changed: a resting thing only gets new heights or goes.
+void P_RestVisited(restvisit_t* visit)
+{
+    restmobj_t* rest = visit->rest;
+    const mobj_t* mobj = &visit->mo;
+    zref_t links[5];
+    P_RestLinks(rest, links);
+    if (memcmp(links, visit->links, sizeof(links)))
+        I_Error("P_RestVisited: links of %i changed", mobj->type);
+
+    if (mobj->flags & MF_REMOVED)
+    {
+        rest->bits |= REST_REMOVED;
+        return;
+    }
+
+    const mobjinfo_t* info = &mobjinfo[mobj->type];
+    if (mobj->x != rest->x || mobj->y != rest->y || mobj->z != P_FromQuarters(mobj->floorz)
+        || mobj->state != info->spawnstate || mobj->flags != (info->flags | MF_STATIC | MF_DROPPED | MF_REST))
+        I_Error("P_RestVisited: %i moved", mobj->type);
+    rest->floorz = mobj->floorz;
+}
+
+boolean P_VisitRest(mobj_t* thing, boolean func(mobj_t*))
+{
+    restvisit_t visit;
+    P_RestMobj((restmobj_t*)thing, &visit);
+    const boolean r = func(&visit.mo);
+    P_RestVisited(&visit);
+    return r;
+}
 
 
 static uint8_t P_ThinkerFunctionForType(mobjtype_t type, mobj_t* mobj)

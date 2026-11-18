@@ -39,6 +39,8 @@
 #define __P_MOBJ__
 
 // Basics.
+#include <stddef.h>
+
 #include "tables.h"
 #include "m_fixed.h"
 
@@ -147,21 +149,31 @@ typedef struct mobj_s
     // Info for drawing: position.
     fixed_t             x;
     fixed_t             y;
-    fixed_t             z;
-
-    //More drawing info: to determine current sprite.
-    angle_t             angle;  // orientation
 
     // More list: links in sector (if needed)
     zref_t              snext;  // mobj_t
     zref_t              sprev;  // the zref_t that points here
+
+    int16_t             subsector;
+
+    mobjtype_t          type;
+
+    spritenum_t         sprite; // used to find patch_t and flip value
 
     // Interaction info, by BLOCKMAP.
     // Links in blocks (if needed).
     zref_t              bnext;  // mobj_t
     zref_t              bprev;  // the zref_t that points here
 
-    int16_t             subsector;
+    fixed_t             z;
+
+    //More drawing info: to determine current sprite.
+    angle_t             angle;  // orientation
+
+    // For movement checking the radius and height are the type's: the height a quarter on a
+    // corpse, both 0 once gibbed.
+
+    uint32_t            flags;
 
                                        // phares 3/17/98
     // a linked list of sectors where this object appears
@@ -171,20 +183,11 @@ typedef struct mobj_s
     int16_t             floorz;
     int16_t             ceilingz;
 
-    // For movement checking the radius and height are the type's: the height a quarter on a
-    // corpse, both 0 once gibbed.
-
-    uint32_t            flags;
-
     int16_t             state;  // index into states[]
 
     uint16_t            frame;  // might be ORed with FF_FULLBRIGHT
 
     int16_t             tics;   // state tic counter
-
-    spritenum_t         sprite; // used to find patch_t and flip value
-
-    mobjtype_t          type;
 } mobj_t;
 
 typedef char assertMobjSize[sizeof(mobj_t) == 44 ? 1 : -1];
@@ -240,9 +243,58 @@ typedef struct
 
 typedef char assertMobjExtSize[sizeof(mobjext_t) == 80 ? 1 : -1];
 
+// A form in the high bits of type marks a thing in the sector and block lists that is no
+// mobj_t. Every form starts like a mobj_t up to its sprite, which a form uses for itself.
+#define FORM_REST   0x40
+#define FORM_MASK   0x40
+
+// A dropped item at rest: only its sector changes it again, and z is its floorz.
+typedef struct
+{
+    fixed_t             x;
+    fixed_t             y;
+    zref_t              snext;
+    zref_t              sprev;
+    int16_t             subsector;
+    mobjtype_t          type;   // with FORM_REST
+    uint8_t             bits;   // REST_*
+    zref_t              bnext;
+    zref_t              bprev;
+    zref_t              touching_sectorlist;
+    int16_t             floorz;
+} restmobj_t;
+
+#define REST_REMOVED    1
+
+typedef char assertRestSize[sizeof(restmobj_t) == 24 ? 1 : -1];
+typedef char assertRestHead[offsetof(restmobj_t, snext) == offsetof(mobj_t, snext)
+                            && offsetof(restmobj_t, sprev) == offsetof(mobj_t, sprev)
+                            && offsetof(restmobj_t, subsector) == offsetof(mobj_t, subsector)
+                            && offsetof(restmobj_t, type) == offsetof(mobj_t, type)
+                            && offsetof(restmobj_t, bnext) == offsetof(mobj_t, bnext)
+                            && offsetof(restmobj_t, bprev) == offsetof(mobj_t, bprev) ? 1 : -1];
+
+// The mobj_t a visit to a resting thing works on, with MF_REST set.
+typedef struct
+{
+    mobj_t              mo;
+    restmobj_t*         rest;
+    zref_t              links[5];
+} restvisit_t;
+
 static inline mobj_t* P_Mobj(zref_t ref)
 {
     return Z_Ptr(ref);
+}
+
+static inline uint8_t P_Form(const mobj_t* mobj)
+{
+    return (uint8_t)mobj->type & FORM_MASK;
+}
+
+static inline const restmobj_t* P_RestOf(const mobj_t* mobj)
+{
+    return ((const restvisit_t*)mobj)->rest;
 }
 
 
@@ -276,6 +328,11 @@ static inline fixed_t P_FromQuarters(int16_t z)
     return (fixed_t)z * (FRACUNIT >> 2);
 }
 void    P_RunStatics(void);
+
+void    P_SpawnDrop(fixed_t x, fixed_t y, mobjtype_t type);
+void    P_RestMobj(restmobj_t* rest, restvisit_t* visit);
+void    P_RestVisited(restvisit_t* visit);
+boolean P_VisitRest(mobj_t* rest, boolean func(mobj_t*));
 
 void    P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 void    P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int16_t damage);

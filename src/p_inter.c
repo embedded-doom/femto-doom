@@ -513,7 +513,6 @@ void P_TouchSpecialThing(mobj_t* special, mobj_t* toucher)
 static void P_KillMobj(mobj_t* source, mobj_t* target)
 {
   mobjtype_t item;
-  mobj_t    * mo;
 
   target->flags &= ~MF_SHOOTABLE;
   target->flags &= ~MF_NOGRAVITY;
@@ -576,8 +575,7 @@ static void P_KillMobj(mobj_t* source, mobj_t* target)
       return;
   }
 
-  mo = P_SpawnMobj (target->x,target->y,ONFLOORZ, item);
-  mo->flags |= MF_DROPPED;    // special versions of items
+  P_SpawnDrop(target->x, target->y, item);
 }
 
 //

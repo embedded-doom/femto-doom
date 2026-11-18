@@ -89,6 +89,7 @@ int16_t     P_BoxOnLineSide (const fixed_t *tmbox, const line_t* ld);
 void    P_LineOpening(const line_t* linedef);
 void    P_UnsetThingPosition(mobj_t* thing);
 void    P_SetThingPosition(mobj_t* thing);
+void    P_SetThingPositionAs(mobj_t* thing, void* at);
 void    P_BeginLoadThings(int16_t map);
 void    P_SetLoadingThing(int16_t thing);
 void    P_EndLoadThings(void);

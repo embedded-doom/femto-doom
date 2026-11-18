@@ -596,6 +596,8 @@ extern const mobjinfo_t mobjinfo[NUMMOBJTYPES];
 #define MF_COUNTKILL    0x00400000U
 // On picking up, count this item object towards intermission item total.
 #define MF_COUNTITEM    0x00800000U
+// The mobj_t of a visit to a resting thing.
+#define MF_REST         0x08000000U
 #define MF_POOLED       0x10000000U
 #define MF_STATIC       0x20000000U
 #define MF_REMOVED      0x40000000U

@@ -131,6 +131,7 @@ mobjext_t*   _g_thingPool;
 int16_t _g_thingPoolSize;
 
 staticchunk_t* _g_staticchunks;
+restchunk_t* _g_restchunks;
 
 
 // Lump order in a map WAD: each map needs a couple of lumps
@@ -269,10 +270,11 @@ static void P_LoadThings(int16_t lump, int16_t map)
 	int16_t mapThingCount = W_MapLumpLength(lump) / sizeof(mapthing_t);
 	const mapthing_t* data = W_GetMapLumpByNum(lump);
 
-	// Map statics need no pool, and items monsters drop take _g_staticchunks. Map monsters and
-	// barrels spawn asleep, without a mobj.
+	// Map statics need no pool, corpses take _g_staticchunks and items monsters drop
+	// _g_restchunks. Map monsters and barrels spawn asleep, without a mobj.
 	_g_thingPoolSize  = THING_POOL_RESERVE;
 	_g_staticchunks   = NULL;
+	_g_restchunks     = NULL;
 	for (int16_t i = 0; i < mapThingCount; i++)
 	{
 		mapthing_t mt;

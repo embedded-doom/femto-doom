@@ -842,7 +842,7 @@ void P_RunLoadStatics(void)
 static void P_SetInterceptThing(intercept_t* in, mobj_t* thing)
 {
   in->isaline = false;
-  if ((thing->flags & (MF_STATIC | MF_INPLACE)) == (MF_STATIC | MF_INPLACE))
+  if ((thing->flags & (MF_STATIC | MF_INPLACE)) == (MF_STATIC | MF_INPLACE) || (thing->flags & MF_REST))
     in->d.thing = (mobj_t*)&staticproxy;
   else if ((thing->flags & MF_INPLACE) && !P_Ext(thing)->thinker.next)
   {
@@ -1052,6 +1052,12 @@ void P_UnsetThingPosition(mobj_t* thing)
 //
 
 void P_SetThingPosition(mobj_t* thing)
+{
+  P_SetThingPositionAs(thing, thing);
+}
+
+// Links thing so that the lists lead to at, which starts like a mobj_t up to its block links.
+void P_SetThingPositionAs(mobj_t* thing, void* at)
 {                                                      // link into subsector
   int16_t ss = R_PointInSubsector(thing->x, thing->y);
   thing->subsector = ss;
@@ -1070,9 +1076,9 @@ void P_SetThingPosition(mobj_t* thing)
       zref_t* link = &SEC_THINGS(P_SubsectorSector(ss));
       zref_t snext = *link;
       if ((thing->snext = snext))
-        P_Mobj(snext)->sprev = Z_Ref(&thing->snext);
+        P_Mobj(snext)->sprev = Z_Ref(&((mobj_t*)at)->snext);
       thing->sprev = Z_Ref(link);
-      *link = Z_Ref(thing);
+      *link = Z_Ref(at);
 
       // phares 3/16/98
       //
@@ -1087,7 +1093,7 @@ void P_SetThingPosition(mobj_t* thing)
       // at sector_t->touching_thinglist) are broken. When a node is
       // added, new sector links are created.
 
-      P_CreateSecNodeList(thing);
+      P_CreateSecNodeList(thing, Z_Ref(at));
     }
 
   // link into blockmap
@@ -1104,9 +1110,9 @@ void P_SetThingPosition(mobj_t* thing)
         zref_t* link = &_g_blocklinks[(blocky*_g_bmapwidth+blockx) & (BLOCKBUCKETS - 1)];
         zref_t bnext = *link;
         if ((thing->bnext = bnext))
-          P_Mobj(bnext)->bprev = Z_Ref(&thing->bnext);
+          P_Mobj(bnext)->bprev = Z_Ref(&((mobj_t*)at)->bnext);
         thing->bprev = Z_Ref(link);
-        *link = Z_Ref(thing);
+        *link = Z_Ref(at);
       }
       else        // thing is off the map
         thing->bnext = 0, thing->bprev = 0;
@@ -1185,7 +1191,7 @@ boolean P_BlockThingsIterator(int16_t x, int16_t y, boolean func(mobj_t*))
     {
     const int16_t b = y*_g_bmapwidth+x;
     for (mobj = P_Mobj(_g_blocklinks[b & (BLOCKBUCKETS - 1)]); mobj; mobj = P_Mobj(mobj->bnext))
-      if (P_ThingBlock(mobj) == b && !func(mobj))
+      if (P_ThingBlock(mobj) == b && !(P_Form(mobj) ? P_VisitRest(mobj, func) : func(mobj)))
         return false;
     return P_LoadListThings(&tlblockfirst[b], func);
     }
