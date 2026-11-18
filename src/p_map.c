@@ -219,7 +219,7 @@ boolean P_TeleportMove(mobj_t* thing, fixed_t x, fixed_t y, boolean boss)
 
   thing->floorz = P_ToQuarters(_g_tmfloorz);
   thing->ceilingz = P_ToQuarters(_g_tmceilingz);
-  P_Ext(thing)->dropoffz = _g_tmdropoffz;        // killough 11/98
+  P_Ext(thing)->dropoffz = P_ToQuarters(_g_tmdropoffz);        // killough 11/98
 
   thing->x = x;
   thing->y = y;
@@ -692,7 +692,7 @@ boolean P_TryMove(mobj_t* thing, fixed_t x, fixed_t y)
     oldy = thing->y;
     thing->floorz = P_ToQuarters(_g_tmfloorz);
     thing->ceilingz = P_ToQuarters(_g_tmceilingz);
-    P_Ext(thing)->dropoffz = _g_tmdropoffz;      // killough 11/98: keep track of dropoffs
+    P_Ext(thing)->dropoffz = P_ToQuarters(_g_tmdropoffz);      // killough 11/98: keep track of dropoffs
     thing->x = x;
     thing->y = y;
 

@@ -275,7 +275,7 @@ void P_NewChaseDir(mobj_t* actor)
     // killough 8/8/98: sometimes move away from target, keeping distance
     // Take advantage over an enemy without missiles, by keeping distance
 
-    if (P_FromQuarters(actor->floorz) - P_Ext(actor)->dropoffz > FRACUNIT*24 &&
+    if (P_FromQuarters(actor->floorz) - P_FromQuarters(P_Ext(actor)->dropoffz) > FRACUNIT*24 &&
             actor->z <= P_FromQuarters(actor->floorz) &&
             !(actor->flags & MF_DROPOFF) &&
             P_AvoidDropoff(actor)) /* Move away from dropoff */
@@ -486,8 +486,8 @@ void A_BossDeath(mobj_t* mo)
     // if all bosses are dead
     if (P_SleeperOfType(mo->type))
         return;
-    for (th = _g_thinkerclasscap.next; th != &_g_thinkerclasscap; th = th->next)
-        if (th->function == P_MobjThinker)
+    for (th = P_NextThinker(NULL); th; th = P_NextThinker(th))
+        if (th->function == TH_MOBJ)
         {
             mobj_t* mo2 = P_MobjOfThinker(th);
             if (mo2 != mo && mo2->type == mo->type && P_Ext(mo2)->health > 0)

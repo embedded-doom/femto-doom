@@ -79,7 +79,7 @@ static boolean P_ThingHeightClip(mobj_t* thing)
   thing->floorz = P_ToQuarters(_g_tmfloorz);
   thing->ceilingz = P_ToQuarters(_g_tmceilingz);
   if (!(thing->flags & MF_STATIC))
-    P_Ext(thing)->dropoffz = _g_tmdropoffz;    /* killough 11/98: remember dropoffs */
+    P_Ext(thing)->dropoffz = P_ToQuarters(_g_tmdropoffz);    /* killough 11/98: remember dropoffs */
 
   if (onfloor)
     {
@@ -390,18 +390,18 @@ result_e T_MovePlaneCeiling(sector_t* sector, fixed_t speed, fixed_t dest, int8_
 typedef struct
 {
   thinker_t thinker;
+  int16_t texture;
   sector_t* sector;
   fixed_t floordestheight;
   fixed_t speed;
-  int16_t texture;
   floor_e type;
   int8_t direction;
 } floormove_t;
 
-typedef char assertFloormoveSize[sizeof(void*) != 4 || sizeof(floormove_t) == 28 ? 1 : -1];
+typedef char assertFloormoveSize[sizeof(void*) != 4 || sizeof(floormove_t) == 24 ? 1 : -1];
 
 
-static void T_MoveFloor(thinker_t* th)
+void T_MoveFloor(thinker_t* th)
 {
   floormove_t* floor = (floormove_t*)th;
   result_e      res;
@@ -509,7 +509,7 @@ boolean EV_DoFloor(int16_t line_tag, floor_e floortype)
     floor = Z_CallocLevSpec(sizeof(*floor));
     P_AddThinker (&floor->thinker);
     P_Mover(sec)->floordata = Z_Ref(floor); //jff 2/22/98
-    floor->thinker.function = T_MoveFloor;
+    floor->thinker.function = TH_FLOOR;
     floor->type = floortype;
 
     // setup the thinker according to the linedef type
@@ -624,7 +624,7 @@ boolean EV_BuildStairs(const line_t* line)
     floor = Z_CallocLevSpec(sizeof(*floor));
     P_AddThinker (&floor->thinker);
     P_Mover(sec)->floordata = Z_Ref(floor);
-    floor->thinker.function = T_MoveFloor;
+    floor->thinker.function = TH_FLOOR;
     floor->direction = 1;
     floor->sector = sec;
     floor->type = buildStair;   //jff 3/31/98 do not leave uninited
@@ -681,7 +681,7 @@ boolean EV_BuildStairs(const line_t* line)
         P_AddThinker (&floor->thinker);
 
         P_Mover(sec)->floordata = Z_Ref(floor); //jff 2/22/98
-        floor->thinker.function = T_MoveFloor;
+        floor->thinker.function = TH_FLOOR;
         floor->direction = 1;
         floor->sector = sec;
         floor->speed = speed;
@@ -752,7 +752,7 @@ boolean EV_DoDonut(const line_t* line)
       floor = Z_CallocLevSpec(sizeof(*floor));
       P_AddThinker (&floor->thinker);
       P_Mover(s2)->floordata = Z_Ref(floor); //jff 2/22/98
-      floor->thinker.function = T_MoveFloor;
+      floor->thinker.function = TH_FLOOR;
       floor->type = donutRaise;
       floor->direction = 1;
       floor->sector = s2;
@@ -764,7 +764,7 @@ boolean EV_DoDonut(const line_t* line)
       floor = Z_CallocLevSpec(sizeof(*floor));
       P_AddThinker (&floor->thinker);
       P_Mover(s1)->floordata = Z_Ref(floor); //jff 2/22/98
-      floor->thinker.function = T_MoveFloor;
+      floor->thinker.function = TH_FLOOR;
       floor->type = lowerFloor;
       floor->direction = -1;
       floor->sector = s1;

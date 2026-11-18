@@ -428,10 +428,10 @@ typedef struct {
 	uint8_t* textureoffset;	// Affected textureoffset
 } scroll_t;
 
-typedef char assertScrollSize[sizeof(void*) != 4 || sizeof(scroll_t) == 16 ? 1 : -1];
+typedef char assertScrollSize[sizeof(void*) != 4 || sizeof(scroll_t) == 12 ? 1 : -1];
 
 
-static void T_Scroll(thinker_t* th)
+void T_Scroll(thinker_t* th)
 {
 	scroll_t* s = (scroll_t*)th;
 	(*s->textureoffset)++;
@@ -449,7 +449,7 @@ static void T_Scroll(thinker_t* th)
 static void Add_Scroller(int16_t affectee)
 {
 	scroll_t* s = Z_CallocLevSpec(sizeof *s);
-	s->thinker.function = T_Scroll;
+	s->thinker.function = TH_SCROLL;
 	s->textureoffset = &P_ChangeableSide(affectee)->textureoffset;
 	P_AddThinker(&s->thinker);
 }

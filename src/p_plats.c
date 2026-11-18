@@ -185,7 +185,7 @@ boolean EV_DoPlat(const line_t* line, plattype_e type)
     plat->type = type;
     plat->sector = sec;
     P_Mover(plat->sector)->floordata = Z_Ref(plat); //jff 2/23/98 multiple thinkers
-    plat->thinker.function = T_PlatRaise;
+    plat->thinker.function = TH_PLAT;
     plat->tag = LN_TAG(line);
 
     //jff 1/26/98 Avoid raise plat bouncing a head off a ceiling and then

@@ -690,7 +690,7 @@ static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
   mobj->sprite    = states[mobj->state].sprite;
   mobj->frame     = states[mobj->state].frame;
   mobj->type      = lt.type;
-  ext->dropoffz     = P_FromQuarters(mobj->floorz);
+  ext->dropoffz     = mobj->floorz;
   ext->health       = info->spawnhealth;
   ext->reactiontime = _g_gameskill != sk_nightmare ? info->reactiontime : 0;
   ext->loadthing    = t + 1;
@@ -700,7 +700,7 @@ static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
 static boolean P_SleepForm(int16_t slot, const mobjext_t* ext, uint8_t* rec)
 {
   const mobj_t* mobj = &ext->mo;
-  if (mobj->type == MT_PLAYER || mobj->type == MT_TELEPORTMAN || ext->thinker.function != P_MobjThinker
+  if (mobj->type == MT_PLAYER || mobj->type == MT_TELEPORTMAN || ext->thinker.function != TH_MOBJ
       || _g_linetarget == mobj)
     return false;
   const int16_t offset = mobj->state - mobjinfo[mobj->type].spawnstate;
@@ -728,7 +728,7 @@ static mobjext_t* P_WakeMobj(int16_t slot)
 {
   mobjext_t* ext = P_Ext(P_NewMobj(MT_POSSESSED));
   P_SleeperMobj(slot, sleeprec[slot], ext);
-  ext->thinker.function = P_MobjThinker;
+  ext->thinker.function = TH_MOBJ;
   loadrefs[slot] = Z_Ref(&ext->mo);
   return ext;
 }

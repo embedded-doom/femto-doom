@@ -72,9 +72,19 @@ int16_t _g_runlast;
 // P_InitThinkers
 //
 
+thinker_t* P_ThinkerAt(uint16_t ref)
+{
+  return ref == THINKER_HEAD ? &_g_thinkerclasscap : Z_Ptr(ref);
+}
+
+static uint16_t P_ThinkerRef(thinker_t* thinker)
+{
+  return thinker == &_g_thinkerclasscap ? THINKER_HEAD : Z_Ref(thinker);
+}
+
 void P_InitThinkers(void)
 {
-  _g_thinkerclasscap.prev = _g_thinkerclasscap.next  = &_g_thinkerclasscap;
+  _g_thinkerclasscap.prev = _g_thinkerclasscap.next  = THINKER_HEAD;
 }
 
 //
@@ -84,15 +94,17 @@ void P_InitThinkers(void)
 
 void P_AddThinker(thinker_t* thinker)
 {
-  _g_thinkerclasscap.prev->next = thinker;
-  thinker->next = &_g_thinkerclasscap;
+  const uint16_t ref = Z_Ref(thinker);
+  P_ThinkerAt(_g_thinkerclasscap.prev)->next = ref;
+  thinker->next = THINKER_HEAD;
   thinker->prev = _g_thinkerclasscap.prev;
-  _g_thinkerclasscap.prev = thinker;
+  _g_thinkerclasscap.prev = ref;
 }
 
 void P_UnlinkThinker(thinker_t* thinker)
 {
-  (thinker->next->prev = thinker->prev)->next = thinker->next;
+  P_ThinkerAt(thinker->next)->prev = thinker->prev;
+  P_ThinkerAt(thinker->prev)->next = thinker->next;
 }
 
 //
@@ -116,12 +128,7 @@ void P_UnlinkThinker(thinker_t* thinker)
 static void P_RemoveThinkerDelayed(thinker_t* thinker)
 {
 
-    thinker_t* next = thinker->next;
-    /* Note that currentthinker is guaranteed to point to us,
-         * and since we're freeing our memory, we had better change that. So
-         * point it to thinker->prev, so the iterator will correctly move on to
-         * thinker->prev->next = thinker->next */
-    (next->prev = thinker->prev)->next = next;
+    P_UnlinkThinker(thinker);
 
     Z_Free(thinker);
 }
@@ -129,12 +136,7 @@ static void P_RemoveThinkerDelayed(thinker_t* thinker)
 static void P_RemoveThingDelayed(thinker_t* thinker)
 {
 
-    thinker_t* next = thinker->next;
-    /* Note that currentthinker is guaranteed to point to us,
-         * and since we're freeing our memory, we had better change that. So
-         * point it to thinker->prev, so the iterator will correctly move on to
-         * thinker->prev->next = thinker->next */
-    (next->prev = thinker->prev)->next = next;
+    P_UnlinkThinker(thinker);
 
     mobj_t* thing = P_MobjOfThinker(thinker);
 
@@ -159,14 +161,14 @@ static void P_RemoveThingDelayed(thinker_t* thinker)
 
 void P_RemoveThinker(thinker_t* thinker)
 {
-  thinker->function = P_RemoveThinkerDelayed;
+  thinker->function = TH_REMOVE;
 }
 
 // Map things spawn first and thinkers are only ever added at the end, so the map things
 // lead the list in load order.
 static int16_t P_ThinkerLoadIndex(thinker_t* th)
 {
-  if (th->function == P_MobjThinker || th->function == P_RemoveThingDelayed)
+  if (th->function == TH_MOBJ || th->function == TH_REMOVETHING)
   {
     const int16_t i = ((mobjext_t*)th)->loadthing;
     if (i)
@@ -178,13 +180,14 @@ static int16_t P_ThinkerLoadIndex(thinker_t* th)
 // Links a map thing that was asleep where it would have been all along.
 void P_AddLoadThinker(thinker_t* thinker, int16_t t)
 {
-  thinker_t* next = _g_thinkerclasscap.next;
+  thinker_t* next = P_ThinkerAt(_g_thinkerclasscap.next);
   while (next != &_g_thinkerclasscap && P_ThinkerLoadIndex(next) < t)
-    next = next->next;
-  thinker->next = next;
+    next = P_ThinkerAt(next->next);
+  const uint16_t ref = Z_Ref(thinker);
+  thinker->next = P_ThinkerRef(next);
   thinker->prev = next->prev;
-  next->prev->next = thinker;
-  next->prev = thinker;
+  P_ThinkerAt(next->prev)->next = ref;
+  next->prev = ref;
   if (next == _g_runnext && t > _g_runlast)
     _g_runnext = thinker;
 }
@@ -194,7 +197,7 @@ void P_RemoveThing(mobj_t* thing)
   if (thing->flags & MF_STATIC)
     thing->flags |= MF_REMOVED;
   else
-    P_Ext(thing)->thinker.function = P_RemoveThingDelayed;
+    P_Ext(thing)->thinker.function = TH_REMOVETHING;
 }
 
 
@@ -205,7 +208,7 @@ thinker_t* P_NextThinker(thinker_t* th)
 {
   thinker_t* top = &_g_thinkerclasscap;
   if (!th) th = top;
-  th = th->next;
+  th = P_ThinkerAt(th->next);
   return th == top ? NULL : th;
 }
 
@@ -233,9 +236,23 @@ thinker_t* P_NextThinker(thinker_t* th)
 // external and using P_RemoveThinkerDelayed() implicitly.
 //
 
+static const think_t thinkers[] = {
+    [TH_MOBJ]        = P_MobjThinker,
+    [TH_BRAINLESS]   = P_MobjBrainlessThinker,
+    [TH_REMOVE]      = P_RemoveThinkerDelayed,
+    [TH_REMOVETHING] = P_RemoveThingDelayed,
+    [TH_DOOR]        = T_VerticalDoor,
+    [TH_FLOOR]       = T_MoveFloor,
+    [TH_PLAT]        = T_PlatRaise,
+    [TH_FLASH]       = T_LightFlash,
+    [TH_STROBE]      = T_StrobeFlash,
+    [TH_GLOW]        = T_Glow,
+    [TH_SCROLL]      = T_Scroll,
+};
+
 static void P_RunThinkers (void)
 {
-    thinker_t* th = _g_thinkerclasscap.next;
+    thinker_t* th = P_ThinkerAt(_g_thinkerclasscap.next);
     thinker_t* th_end = &_g_thinkerclasscap;
     int16_t sleeper = 0;
 
@@ -254,10 +271,10 @@ static void P_RunThinkers (void)
             break;
 
         _g_runlast = t;
-        _g_runnext = th->next;
+        _g_runnext = P_ThinkerAt(th->next);
         if(th->function)
-            th->function(th);
-        if (th->function == P_MobjThinker)
+            thinkers[th->function](th);
+        if (th->function == TH_MOBJ)
             P_SleepIfUnchanged((mobjext_t*)th);
 
         th = _g_runnext;

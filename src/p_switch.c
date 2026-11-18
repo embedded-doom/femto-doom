@@ -322,13 +322,13 @@ static void EV_VerticalDoor(const line_t* line, mobj_t* thing)
     /* For old demos we have to emulate the old buggy behavior and
      * mess up non-T_VerticalDoor actions.
      */
-    if (door->thinker.function == T_VerticalDoor)
+    if (door->thinker.function == TH_DOOR)
     {
       /* An already moving repeatable door which is being re-pressed, or a
        * monster is trying to open a closing door - so change direction
        * DEMOSYNC: we only read door->direction now if it really is a door.
        */
-      if (door->thinker.function == T_VerticalDoor && door->direction == -1) {
+      if (door->thinker.function == TH_DOOR && door->direction == -1) {
         door->direction = 1; /* go back up */
       } else if (player) {
         door->direction = -1; /* go back down */
@@ -347,7 +347,7 @@ static void EV_VerticalDoor(const line_t* line, mobj_t* thing)
   door = Z_CallocLevSpec(sizeof(*door));
   P_AddThinker (&door->thinker);
   P_Mover(sec)->ceilingdata = Z_Ref(door); //jff 2/22/98
-  door->thinker.function = T_VerticalDoor;
+  door->thinker.function = TH_DOOR;
   door->sector = sec;
   door->direction = 1;
   door->speed = VDOORSPEED;

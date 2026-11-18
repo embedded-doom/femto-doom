@@ -257,7 +257,7 @@ boolean EV_DoDoor(const line_t* line, vldoor_e type)
     P_AddThinker (&door->thinker);
     P_Mover(sec)->ceilingdata = Z_Ref(door); //jff 2/22/98
 
-    door->thinker.function = T_VerticalDoor;
+    door->thinker.function = TH_DOOR;
     door->sector = sec;
     door->type = type;
     door->speed = VDOORSPEED;

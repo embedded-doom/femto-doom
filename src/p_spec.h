@@ -187,18 +187,18 @@ typedef struct
 typedef struct
 {
   thinker_t thinker;
+  int16_t tag;
   sector_t* sector;
   fixed_t speed;
   fixed_t low;
   fixed_t high;
-  int16_t tag;
   int8_t wait;
   int8_t count;
   plat_e status;
   plattype_e type;
 } plat_t;
 
-typedef char assertPlatSize[sizeof(void*) != 4 || sizeof(plat_t) == 36 ? 1 : -1];
+typedef char assertPlatSize[sizeof(void*) != 4 || sizeof(plat_t) == 28 ? 1 : -1];
 
 
 // p_ceilng
@@ -206,16 +206,17 @@ typedef char assertPlatSize[sizeof(void*) != 4 || sizeof(plat_t) == 36 ? 1 : -1]
 typedef struct
 {
   thinker_t thinker;
+
+  // (keep in case a door going down is reset)
+  // when it reaches 0, start going down
+  int16_t topcountdown;
+
   sector_t* sector;
   fixed_t topheight;
   fixed_t speed;
 
   //jff 1/31/98 keep track of line door is triggered by
   const line_t* line;
-
-  // (keep in case a door going down is reset)
-  // when it reaches 0, start going down
-  int16_t topcountdown;
 
   vldoor_e type;
 
@@ -226,7 +227,7 @@ typedef struct
   int8_t lighttag;
 } vldoor_t;
 
-typedef char assertVldoorSize[sizeof(void*) != 4 || sizeof(vldoor_t) == 36 ? 1 : -1];
+typedef char assertVldoorSize[sizeof(void*) != 4 || sizeof(vldoor_t) == 28 ? 1 : -1];
 
 
 ////////////////////////////////////////////////////////////////
@@ -260,6 +261,11 @@ void P_ChangeSwitchTexture(const line_t* line, boolean useAgain);
 // p_plats
 
 void T_PlatRaise(thinker_t* th);
+void T_MoveFloor(thinker_t* th);
+void T_LightFlash(thinker_t* th);
+void T_StrobeFlash(thinker_t* th);
+void T_Glow(thinker_t* th);
+void T_Scroll(thinker_t* th);
 
 // p_doors
 

@@ -64,16 +64,16 @@
 typedef struct
 {
   thinker_t thinker;
-  sector_t* sector;
   int16_t maxlight;
+  sector_t* sector;
   int16_t minlight;
   int8_t count;
 } lightflash_t;
 
-typedef char assertLightflashSize[sizeof(void*) != 4 || sizeof(lightflash_t) == 24 ? 1 : -1];
+typedef char assertLightflashSize[sizeof(void*) != 4 || sizeof(lightflash_t) == 16 ? 1 : -1];
 
 
-static void T_LightFlash(thinker_t* th)
+void T_LightFlash(thinker_t* th)
 {
   lightflash_t* flash = (lightflash_t*)th;
   if (--flash->count)
@@ -104,17 +104,17 @@ static void T_LightFlash(thinker_t* th)
 typedef struct
 {
   thinker_t thinker;
-  sector_t* sector;
   int16_t minlight;
+  sector_t* sector;
   int16_t maxlight;
   int8_t count;
   int8_t darktime;
 } strobe_t;
 
-typedef char assertStrobeSize[sizeof(void*) != 4 || sizeof(strobe_t) == 24 ? 1 : -1];
+typedef char assertStrobeSize[sizeof(void*) != 4 || sizeof(strobe_t) == 16 ? 1 : -1];
 
 
-static void T_StrobeFlash(thinker_t* th)
+void T_StrobeFlash(thinker_t* th)
 {
   strobe_t* flash = (strobe_t*)th;
   if (--flash->count)
@@ -144,16 +144,16 @@ static void T_StrobeFlash(thinker_t* th)
 typedef struct
 {
   thinker_t thinker;
-  sector_t* sector;
   int16_t minlight;
+  sector_t* sector;
   int16_t maxlight;
   int8_t direction;
 } glow_t;
 
-typedef char assertGlowSize[sizeof(void*) != 4 || sizeof(glow_t) == 24 ? 1 : -1];
+typedef char assertGlowSize[sizeof(void*) != 4 || sizeof(glow_t) == 16 ? 1 : -1];
 
 
-static void T_Glow(thinker_t* th)
+void T_Glow(thinker_t* th)
 {
   glow_t* g = (glow_t*)th;
   int16_t lightlevel = g->sector->lightlevel;
@@ -241,7 +241,7 @@ void P_SpawnLightFlash (sector_t* sector)
 
   P_AddThinker (&flash->thinker);
 
-  flash->thinker.function = T_LightFlash;
+  flash->thinker.function = TH_FLASH;
   flash->sector = sector;
   flash->maxlight = sector->lightlevel;
 
@@ -269,7 +269,7 @@ void P_SpawnStrobeFlash(sector_t* sector, int8_t fastOrSlow, boolean inSync)
 
   flash->sector = sector;
   flash->darktime = fastOrSlow;
-  flash->thinker.function = T_StrobeFlash;
+  flash->thinker.function = TH_STROBE;
   flash->maxlight = sector->lightlevel;
   flash->minlight = P_FindMinSurroundingLight(sector, sector->lightlevel);
 
@@ -304,7 +304,7 @@ void P_SpawnGlowingLight(sector_t* sector)
   g->sector = sector;
   g->minlight = P_FindMinSurroundingLight(sector,sector->lightlevel);
   g->maxlight = sector->lightlevel;
-  g->thinker.function = T_Glow;
+  g->thinker.function = TH_GLOW;
   g->direction = -1;
 
   sector->special = 0;

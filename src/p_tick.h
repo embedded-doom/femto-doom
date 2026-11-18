@@ -59,4 +59,6 @@ extern int16_t _g_runlast;
 /* cph 2002/01/13 - iterator for thinker lists */
 thinker_t* P_NextThinker(thinker_t*);
 
+thinker_t* P_ThinkerAt(uint16_t ref);
+
 #endif

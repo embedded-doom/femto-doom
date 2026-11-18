@@ -54,7 +54,7 @@ static mobj_t* P_TeleportDestination(const line_t* line)
   for (i = -1; (i = P_FindSectorFromLineTag(LN_TAG(line), i)) >= 0;) {
     thinker_t* th = NULL;
     while ((th = P_NextThinker(th)) != NULL)
-      if (th->function == P_MobjThinker) {
+      if (th->function == TH_MOBJ) {
         mobj_t* m = P_MobjOfThinker(th);
         if (m->type == MT_TELEPORTMAN  &&
             P_SubsectorSector(m->subsector)-_g_sectors == i)

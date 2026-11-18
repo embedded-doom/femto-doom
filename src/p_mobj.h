@@ -198,8 +198,8 @@ typedef struct
     // List: thinker links.
     thinker_t           thinker;
 
-    // killough 11/98: the lowest floor over all contacted Sectors.
-    fixed_t             dropoffz;
+    // killough 11/98: the lowest floor over all contacted Sectors, in quarter units.
+    int16_t             dropoffz;
 
     // Momentums, used to update position.
     fixed_t             momx;
@@ -238,7 +238,7 @@ typedef struct
     mobj_t              mo;
 } mobjext_t;
 
-typedef char assertMobjExtSize[sizeof(void*) != 4 || sizeof(mobjext_t) == 88 ? 1 : -1];
+typedef char assertMobjExtSize[sizeof(mobjext_t) == 80 ? 1 : -1];
 
 static inline mobj_t* P_Mobj(zref_t ref)
 {
@@ -261,6 +261,7 @@ void    P_RemoveMobj(mobj_t* th);
 boolean P_SetMobjState(mobj_t* mobj, statenum_t state);
 
 void    P_MobjThinker(thinker_t* th);
+void    P_MobjBrainlessThinker(thinker_t* th);
 mobj_t* P_NewMobj(mobjtype_t type);
 
 mobjext_t* P_Ext(mobj_t* mobj);

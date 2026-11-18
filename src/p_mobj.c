@@ -781,8 +781,8 @@ static void P_SettleCorpse(mobjext_t* ext)
         n->m_thing = to;
     P_MoveLoadRef(ext->loadthing, mobj);
 
-    for (thinker_t* th = _g_thinkerclasscap.next; th != &_g_thinkerclasscap; th = th->next)
-        if (th->function == P_MobjThinker)
+    for (thinker_t* th = P_NextThinker(NULL); th; th = P_NextThinker(th))
+        if (th->function == TH_MOBJ)
         {
             mobjext_t* e = (mobjext_t*)th;
             if (e->target == from)
@@ -805,14 +805,14 @@ void P_MobjThinker (thinker_t* th)
     if (ext->momx | ext->momy)
     {
         P_XYMovement(mobj);
-        if (th->function != P_MobjThinker) // cph - Must've been removed
+        if (th->function != TH_MOBJ) // cph - Must've been removed
             return;       // killough - mobj was removed
     }
 
     if (mobj->z != P_FromQuarters(mobj->floorz) || ext->momz)
     {
         P_ZMovement(mobj);
-        if (th->function != P_MobjThinker) // cph - Must've been removed
+        if (th->function != TH_MOBJ) // cph - Must've been removed
             return;       // killough - mobj was removed
     }
 
@@ -881,7 +881,7 @@ static void P_CycleState(mobj_t* mobj)
 
 //Thinker function for stuff that doesn't need to do anything
 //interesting.
-static void P_MobjBrainlessThinker(thinker_t* th)
+void P_MobjBrainlessThinker(thinker_t* th)
 {
     P_CycleState(P_MobjOfThinker(th));
 }
@@ -908,18 +908,18 @@ void P_RunStatics(void)
 
 
 
-static think_t P_ThinkerFunctionForType(mobjtype_t type, mobj_t* mobj)
+static uint8_t P_ThinkerFunctionForType(mobjtype_t type, mobj_t* mobj)
 {
     //Full thinking ability.
     if(type < MT_MISC0)
-        return P_MobjThinker;
+        return TH_MOBJ;
 
     //Just state cycles.
     if(mobj->tics != -1)
-        return P_MobjBrainlessThinker;
+        return TH_BRAINLESS;
 
     //No thinking at all.
-    return NULL;
+    return TH_NONE;
 }
 
 //
@@ -1025,7 +1025,7 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
 
     if (ext)
     {
-        ext->dropoffz = P_FromQuarters(mobj->floorz);   /* killough 11/98: for tracking dropoffs */
+        ext->dropoffz = mobj->floorz;   /* killough 11/98: for tracking dropoffs */
         ext->thinker.function = P_ThinkerFunctionForType(type, mobj);
         ext->target = ext->lastenemy = 0;
         P_AddThinker (&ext->thinker);

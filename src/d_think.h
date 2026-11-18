@@ -48,17 +48,37 @@ typedef void (*actionf_t)(void);
 struct thinker_s;
 typedef void (*think_t)(struct thinker_s*);
 
+// What a thinker runs, an index into P_RunThinkers' table.
+enum
+{
+  TH_NONE,
+  TH_MOBJ,
+  TH_BRAINLESS,
+  TH_REMOVE,
+  TH_REMOVETHING,
+  TH_DOOR,
+  TH_FLOOR,
+  TH_PLAT,
+  TH_FLASH,
+  TH_STROBE,
+  TH_GLOW,
+  TH_SCROLL
+};
+
+// The zone reference of the list's head, which is not in the zone; zone blocks are 4-byte
+// aligned, so their references are even. A thinker that is not linked has next 0.
+#define THINKER_HEAD 1
 
 /* Doubly linked list of actors. */
 typedef struct thinker_s
 {
-  struct thinker_s*   prev;
-  struct thinker_s*   next;
-  think_t             function;
+  uint16_t  prev;
+  uint16_t  next;
+  uint8_t   function;
 
 } thinker_t;
 
-typedef char assertThinkerSize[sizeof(void*) != 4 || sizeof(thinker_t) == 12 ? 1 : -1];
+typedef char assertThinkerSize[sizeof(thinker_t) == 6 ? 1 : -1];
 
 
 #endif
