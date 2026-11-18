@@ -726,7 +726,7 @@ static void P_Sleep(int16_t slot, mobjext_t* ext, uint8_t rec)
 
 static mobjext_t* P_WakeMobj(int16_t slot)
 {
-  mobjext_t* ext = P_Ext(P_NewMobj(MT_POSSESSED));
+  mobjext_t* ext = P_Ext(P_NewMobj());
   P_SleeperMobj(slot, sleeprec[slot], ext);
   ext->thinker.function = TH_MOBJ;
   loadrefs[slot] = Z_Ref(&ext->mo);

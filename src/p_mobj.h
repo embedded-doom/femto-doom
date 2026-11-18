@@ -265,10 +265,9 @@ typedef struct
     int16_t             floorz;
 } restmobj_t;
 
-#define REST_REMOVED    1
-#define REST_CORPSE     2
-#define REST_XDEATH     4
-#define REST_GIBS       8
+#define REST_CORPSE     1
+#define REST_XDEATH     2
+#define REST_GIBS       4
 
 typedef char assertRestSize[sizeof(restmobj_t) == 24 ? 1 : -1];
 typedef char assertRestHead[offsetof(restmobj_t, snext) == offsetof(mobj_t, snext)
@@ -350,7 +349,7 @@ boolean P_SetMobjState(mobj_t* mobj, statenum_t state);
 
 void    P_MobjThinker(thinker_t* th);
 void    P_MobjBrainlessThinker(thinker_t* th);
-mobj_t* P_NewMobj(mobjtype_t type);
+mobj_t* P_NewMobj(void);
 
 mobjext_t* P_Ext(mobj_t* mobj);
 int16_t P_Health(mobj_t* mobj);

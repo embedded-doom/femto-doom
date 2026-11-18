@@ -234,35 +234,9 @@ extern const byte* _g_rejectmatrix;
 extern mobjext_t*   _g_thingPool;
 extern int16_t _g_thingPoolSize;
 
-// Items dropped in play, in chunks allocated as they drop.
-#define STATICCHUNK 4
-typedef struct staticchunk_s
-{
-  mobj_t mobj[STATICCHUNK];
-  struct staticchunk_s* next;
-} staticchunk_t;
-
-extern staticchunk_t* _g_staticchunks;
-
-// Dropped items and corpses at rest, in chunks allocated as they come to rest.
-#define RESTCHUNK 8
-typedef struct restchunk_s
-{
-  struct restchunk_s* next;
-  restmobj_t rest[RESTCHUNK];
-} restchunk_t;
-
-extern restchunk_t* _g_restchunks;
-
-// Puffs, blood and teleport fog, in chunks allocated as they spawn.
-#define EFFECTCHUNK 4
-typedef struct effectchunk_s
-{
-  struct effectchunk_s* next;
-  effectmobj_t effect[EFFECTCHUNK];
-} effectchunk_t;
-
-extern effectchunk_t* _g_effectchunks;
+// Resting things removed this tic, linked through touching_sectorlist, to free once nothing
+// walks past them any more.
+extern zref_t _g_removedrests;
 
 
 //******************************************************************************

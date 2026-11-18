@@ -755,8 +755,8 @@ static restmobj_t* P_RestCorpse(const mobj_t* mobj, zref_t ref);
 static void P_InitMobj(mobj_t* mobj, fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, void* at);
 
 // A corpse at rest only ever changes again through its sector, so it goes on as a static:
-// the same mobj_t in a static slot, and everything that referred to it refers to that. Unless
-// something does, it rests in a resting thing instead.
+// the same mobj_t in a block of its own, and everything that referred to it refers to that.
+// Unless something does, it rests in a resting thing instead.
 static void P_SettleCorpse(mobjext_t* ext)
 {
     mobj_t* old = &ext->mo;
@@ -764,7 +764,7 @@ static void P_SettleCorpse(mobjext_t* ext)
     mobj_t* at = (mobj_t*)P_RestCorpse(old, from);
     if (!at)
     {
-        at = P_NewMobj(MT_MISC0);
+        at = Z_MallocLevel(sizeof(mobj_t));
         *at = *old;
         at->flags = (old->flags & ~MF_POOLED) | MF_STATIC;
     }
@@ -800,6 +800,8 @@ static void P_SettleCorpse(mobjext_t* ext)
         }
     if (_g_player.attacker == old)
         _g_player.attacker = at;
+    if (_g_linetarget == old)
+        _g_linetarget = at;
 
     P_RemoveThing(old);
 }
@@ -897,27 +899,12 @@ void P_MobjBrainlessThinker(thinker_t* th)
 
 void P_RunStatics(void)
 {
-    for (staticchunk_t* c = _g_staticchunks; c; c = c->next)
-        for (int16_t i = 0; i < STATICCHUNK; i++)
-        {
-            mobj_t* mobj = &c->mobj[i];
-
-            if (mobj->type == MT_NOTHING)
-                continue;
-
-            if (mobj->flags & MF_REMOVED)
-                mobj->type = MT_NOTHING;
-            else
-                P_CycleState(mobj);
-        }
-
-    for (restchunk_t* c = _g_restchunks; c; c = c->next)
-        for (int16_t i = 0; i < RESTCHUNK; i++)
-            if (c->rest[i].bits & REST_REMOVED)
-            {
-                c->rest[i].type = MT_NOTHING;
-                c->rest[i].bits = 0;
-            }
+    while (_g_removedrests)
+    {
+        restmobj_t* rest = Z_Ptr(_g_removedrests);
+        _g_removedrests = rest->touching_sectorlist;
+        Z_Free(rest);
+    }
 
     P_RunLoadStatics();
 }
@@ -926,17 +913,7 @@ void P_RunStatics(void)
 
 static restmobj_t* P_NewRest(void)
 {
-    for (restchunk_t* c = _g_restchunks; c; c = c->next)
-        for (int16_t i = RESTCHUNK-1; i >= 0; i--)
-            if (c->rest[i].type == MT_NOTHING)
-                return &c->rest[i];
-
-    restchunk_t* c = Z_MallocLevel(sizeof(*c));
-    for (int16_t i = 0; i < RESTCHUNK; i++)
-        c->rest[i].type = MT_NOTHING;
-    c->next = _g_restchunks;
-    _g_restchunks = c;
-    return &c->rest[RESTCHUNK-1];
+    return Z_MallocLevel(sizeof(restmobj_t));
 }
 
 static void P_RestLinks(const restmobj_t* rest, zref_t* links)
@@ -1083,13 +1060,16 @@ void P_RestVisited(restvisit_t* visit)
     P_RestLinks(rest, links);
     if ((rest->bits & REST_CORPSE) && mobj->state == S_GIBS)
         rest->bits |= REST_GIBS;
-    if (mobj->flags & MF_REMOVED)
-        rest->bits |= REST_REMOVED;
     P_RestForm(rest, &flags, &state);
     if (memcmp(links, visit->links, sizeof(links)) || mobj->x != rest->x || mobj->y != rest->y
         || mobj->z != P_FromQuarters(mobj->floorz) || mobj->state != state || (mobj->flags & ~MF_REMOVED) != flags)
         I_Error("P_RestVisited: %i moved", mobj->type);
     rest->floorz = mobj->floorz;
+    if (mobj->flags & MF_REMOVED)
+    {
+        rest->touching_sectorlist = _g_removedrests;
+        _g_removedrests = Z_Ref(rest);
+    }
 }
 
 boolean P_VisitRest(mobj_t* thing, boolean func(mobj_t*))
@@ -1102,20 +1082,6 @@ boolean P_VisitRest(mobj_t* thing, boolean func(mobj_t*))
 }
 
 
-static effectmobj_t* P_NewEffect(void)
-{
-    for (effectchunk_t* c = _g_effectchunks; c; c = c->next)
-        for (int16_t i = EFFECTCHUNK-1; i >= 0; i--)
-            if (c->effect[i].type == MT_NOTHING)
-                return &c->effect[i];
-
-    effectchunk_t* c = Z_MallocLevel(sizeof(*c));
-    for (int16_t i = 0; i < EFFECTCHUNK; i++)
-        c->effect[i].type = MT_NOTHING;
-    c->next = _g_effectchunks;
-    _g_effectchunks = c;
-    return &c->effect[EFFECTCHUNK-1];
-}
 
 void P_EffectMobj(const effectmobj_t* effect, mobj_t* mobj)
 {
@@ -1138,17 +1104,6 @@ void P_EffectMobj(const effectmobj_t* effect, mobj_t* mobj)
     mobj->tics      = effect->tics;
 }
 
-// The mobjext_t P_SpawnMobj makes, as far as an effect keeps it.
-static void P_EffectExt(mobjext_t* ext)
-{
-    const mobjinfo_t* info = &mobjinfo[ext->mo.type];
-    ext->thinker.function = TH_MOBJ;
-    ext->dropoffz = ext->mo.floorz;
-    ext->health = info->spawnhealth;
-    if (_g_gameskill != sk_nightmare)
-        ext->reactiontime = info->reactiontime;
-}
-
 // What P_SpawnMobj does for a puff, blood or teleport fog; P_EndEffect keeps the result.
 void P_BeginEffect(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, effectvisit_t* visit)
 {
@@ -1156,7 +1111,7 @@ void P_BeginEffect(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, effectvisit
         | MF_SHOOTABLE | MF_MISSILE | MF_COUNTKILL)))
         I_Error("P_BeginEffect: %i is no effect", type);
 
-    effectmobj_t* effect = P_NewEffect();
+    effectmobj_t* effect = Z_MallocLevel(sizeof(effectmobj_t));
     visit->effect = effect;
     memset(&visit->ext, 0, sizeof(visit->ext));
     P_InitMobj(&visit->ext.mo, x, y, z, type, effect);
@@ -1213,7 +1168,7 @@ void P_EffectThinker(thinker_t* th)
     const zref_t links[3] = { effect->snext, effect->sprev, effect->touching_sectorlist };
     memset(&visit.ext, 0, sizeof(visit.ext));
     P_EffectMobj(effect, &visit.ext.mo);
-    P_EffectExt(&visit.ext);
+    visit.ext.thinker.function = TH_MOBJ;
     visit.ext.momz = (fixed_t)effect->momz * FRACUNIT;
     visit.effect = effect;
 
@@ -1237,7 +1192,7 @@ void P_EffectThinker(thinker_t* th)
 void P_RemoveEffectDelayed(thinker_t* th)
 {
     P_UnlinkThinker(th);
-    P_EffectOfThinker(th)->type = MT_NOTHING;
+    Z_Free(P_EffectOfThinker(th));
 }
 
 
@@ -1259,35 +1214,9 @@ static uint8_t P_ThinkerFunctionForType(mobjtype_t type, mobj_t* mobj)
 // P_SpawnMobj
 //
 
-mobj_t* P_NewMobj(mobjtype_t type)
+mobj_t* P_NewMobj(void)
 {
     mobjext_t* ext;
-
-    if (type >= MT_MISC0)
-    {
-        mobj_t* mobj = NULL;
-        for (staticchunk_t* c = _g_staticchunks; c && !mobj; c = c->next)
-            for (int16_t i = STATICCHUNK-1; i >= 0; i--)
-                if (c->mobj[i].type == MT_NOTHING)
-                {
-                    mobj = &c->mobj[i];
-                    break;
-                }
-
-        if (!mobj)
-        {
-            staticchunk_t* c = Z_MallocLevel(sizeof(*c));
-            for (int16_t i = 0; i < STATICCHUNK; i++)
-                c->mobj[i].type = MT_NOTHING;
-            c->next = _g_staticchunks;
-            _g_staticchunks = c;
-            mobj = &c->mobj[STATICCHUNK-1];
-        }
-
-        memset (mobj, 0, sizeof (*mobj));
-        mobj->flags = MF_STATIC;
-        return mobj;
-    }
 
     for(int16_t i = _g_thingPoolSize-1; i >= 0; i--)
     {
@@ -1370,7 +1299,7 @@ static void P_InitMobj(mobj_t* mobj, fixed_t x, fixed_t y, fixed_t z, mobjtype_t
 
 mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
 {
-    mobj_t* mobj = P_NewMobj(type);
+    mobj_t* mobj = P_NewMobj();
     P_InitMobj(mobj, x, y, z, type, mobj);
     return mobj;
 }
