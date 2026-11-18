@@ -201,9 +201,9 @@ static boolean P_CheckSector(sector_t* sector, fixed_t oldfloor, fixed_t oldceil
         {
         n->visited  = true;          // mark thing as processed
         mobj_t* thing = P_Mobj(n->m_thing);
-        if (P_Form(thing))
+        if (P_Form(thing) == FORM_REST)
           P_VisitRest(thing, PIT_ChangeRest);
-        else if (!(thing->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
+        else if (!P_Form(thing) && !(thing->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
           PIT_ChangeSector(thing);    // process it
         found = true;
         break;                 // exit and start over

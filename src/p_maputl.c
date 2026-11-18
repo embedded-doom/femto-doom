@@ -1056,7 +1056,7 @@ void P_SetThingPosition(mobj_t* thing)
   P_SetThingPositionAs(thing, thing);
 }
 
-// Links thing so that the lists lead to at, which starts like a mobj_t up to its block links.
+// Links thing so that the lists lead to at, which starts like a mobj_t up to the links it gets.
 void P_SetThingPositionAs(mobj_t* thing, void* at)
 {                                                      // link into subsector
   int16_t ss = R_PointInSubsector(thing->x, thing->y);

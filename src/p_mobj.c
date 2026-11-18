@@ -677,10 +677,9 @@ static void P_NightmareRespawn(mobj_t* mobj)
     // spawn a teleport fog at old spot
     // because of removal of the body?
 
-    mo = P_SpawnMobj (mobj->x,
-                      mobj->y,
-                      SEC_FLOORHEIGHT(P_SubsectorSector(mobj->subsector)),
-                      MT_TFOG);
+    mo = P_SpawnFog (mobj->x,
+                     mobj->y,
+                     SEC_FLOORHEIGHT(P_SubsectorSector(mobj->subsector)));
 
     // initiate teleport sound
 
@@ -690,7 +689,7 @@ static void P_NightmareRespawn(mobj_t* mobj)
 
     ss = R_PointInSubsector (x,y);
 
-    mo = P_SpawnMobj (x, y, SEC_FLOORHEIGHT(P_SubsectorSector(ss)) , MT_TFOG);
+    mo = P_SpawnFog (x, y, SEC_FLOORHEIGHT(P_SubsectorSector(ss)));
 
     S_StartSound (mo, sfx_telept);
 
@@ -1039,6 +1038,168 @@ boolean P_VisitRest(mobj_t* thing, boolean func(mobj_t*))
 }
 
 
+static effectmobj_t* P_NewEffect(void)
+{
+    for (effectchunk_t* c = _g_effectchunks; c; c = c->next)
+        for (int16_t i = EFFECTCHUNK-1; i >= 0; i--)
+            if (c->effect[i].type == MT_NOTHING)
+                return &c->effect[i];
+
+    effectchunk_t* c = Z_MallocLevel(sizeof(*c));
+    for (int16_t i = 0; i < EFFECTCHUNK; i++)
+        c->effect[i].type = MT_NOTHING;
+    c->next = _g_effectchunks;
+    _g_effectchunks = c;
+    return &c->effect[EFFECTCHUNK-1];
+}
+
+void P_EffectMobj(const effectmobj_t* effect, mobj_t* mobj)
+{
+    const statenum_t state = effect->state;
+    memset(mobj, 0, sizeof(*mobj));
+    mobj->x         = effect->x;
+    mobj->y         = effect->y;
+    mobj->snext     = effect->snext;
+    mobj->sprev     = effect->sprev;
+    mobj->subsector = effect->subsector;
+    mobj->type      = effect->type & ~FORM_MASK;
+    mobj->sprite    = states[state].sprite;
+    mobj->z         = effect->z;
+    mobj->flags     = mobjinfo[mobj->type].flags;
+    mobj->touching_sectorlist = effect->touching_sectorlist;
+    mobj->floorz    = effect->floorz;
+    mobj->ceilingz  = effect->ceilingz;
+    mobj->state     = state;
+    mobj->frame     = states[state].frame;
+    mobj->tics      = effect->tics;
+}
+
+// The mobjext_t P_SpawnMobj makes, as far as an effect keeps it.
+static void P_EffectExt(mobjext_t* ext)
+{
+    const mobjinfo_t* info = &mobjinfo[ext->mo.type];
+    ext->thinker.function = TH_MOBJ;
+    ext->dropoffz = ext->mo.floorz;
+    ext->health = info->spawnhealth;
+    if (_g_gameskill != sk_nightmare)
+        ext->reactiontime = info->reactiontime;
+}
+
+// What P_SpawnMobj does for a puff, blood or teleport fog; P_EndEffect keeps the result.
+void P_BeginEffect(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, effectvisit_t* visit)
+{
+    const mobjinfo_t* info = &mobjinfo[type];
+    const state_t* st = &states[info->spawnstate];
+    if (type >= MT_MISC0 || !(info->flags & MF_NOBLOCKMAP) || (info->flags & (MF_NOSECTOR | MF_SOLID | MF_SPECIAL
+        | MF_SHOOTABLE | MF_MISSILE | MF_COUNTKILL)))
+        I_Error("P_BeginEffect: %i is no effect", type);
+
+    mobjext_t* ext = &visit->ext;
+    mobj_t* mobj = &ext->mo;
+    memset(ext, 0, sizeof(*ext));
+    mobj->type  = type;
+    mobj->x     = x;
+    mobj->y     = y;
+    mobj->flags = info->flags;
+
+    P_Random(); // only to call random for compatibiltiy
+
+    mobj->state  = info->spawnstate;
+    mobj->tics   = st->tics;
+    mobj->sprite = st->sprite;
+    mobj->frame  = st->frame;
+
+    effectmobj_t* effect = P_NewEffect();
+    visit->effect = effect;
+    P_SetThingPositionAs(mobj, effect);
+
+    mobj->floorz   = P_ToQuarters(SEC_FLOORHEIGHT(P_SubsectorSector(mobj->subsector)));
+    mobj->ceilingz = P_ToQuarters(SEC_CEILINGHEIGHT(P_SubsectorSector(mobj->subsector)));
+    mobj->z = z == ONFLOORZ ? P_FromQuarters(mobj->floorz) : z == ONCEILINGZ ?
+                                  P_FromQuarters(mobj->ceilingz) - P_Height(mobj) : z;
+    P_EffectExt(ext);
+    effect->thinker.function = TH_EFFECT;
+    P_AddThinker(&effect->thinker);
+}
+
+// Keeps what spawning or a tic made of an effect, which may only have moved up or down and
+// changed its state.
+void P_EndEffect(effectvisit_t* visit)
+{
+    const mobjext_t* ext = &visit->ext;
+    const mobj_t* mobj = &ext->mo;
+    effectmobj_t* effect = visit->effect;
+    const int8_t momz = ext->momz / FRACUNIT;
+    if ((fixed_t)momz * FRACUNIT != ext->momz || mobj->tics != (int8_t)mobj->tics || ext->momx || ext->momy
+        || mobj->sprite != states[mobj->state].sprite || mobj->frame != states[mobj->state].frame
+        || mobj->flags != mobjinfo[mobj->type].flags || mobj->angle)
+        I_Error("P_EndEffect: %i does more", mobj->type);
+
+    effect->x         = mobj->x;
+    effect->y         = mobj->y;
+    effect->snext     = mobj->snext;
+    effect->sprev     = mobj->sprev;
+    effect->subsector = mobj->subsector;
+    effect->type      = mobj->type | FORM_EFFECT;
+    effect->tics      = mobj->tics;
+    effect->z         = mobj->z;
+    effect->touching_sectorlist = mobj->touching_sectorlist;
+    effect->floorz    = mobj->floorz;
+    effect->ceilingz  = mobj->ceilingz;
+    effect->state     = mobj->state;
+    effect->momz      = momz;
+}
+
+mobj_t* P_SpawnFog(fixed_t x, fixed_t y, fixed_t z)
+{
+    effectvisit_t visit;
+    P_BeginEffect(x, y, z, MT_TFOG, &visit);
+    P_EndEffect(&visit);
+    return (mobj_t*)visit.effect;
+}
+
+static effectmobj_t* P_EffectOfThinker(thinker_t* th)
+{
+    return (effectmobj_t*)((uint8_t*)th - offsetof(effectmobj_t, thinker));
+}
+
+// What P_MobjThinker does for an effect.
+void P_EffectThinker(thinker_t* th)
+{
+    effectmobj_t* effect = P_EffectOfThinker(th);
+    effectvisit_t visit;
+    const zref_t links[3] = { effect->snext, effect->sprev, effect->touching_sectorlist };
+    memset(&visit.ext, 0, sizeof(visit.ext));
+    P_EffectMobj(effect, &visit.ext.mo);
+    P_EffectExt(&visit.ext);
+    visit.ext.momz = (fixed_t)effect->momz * FRACUNIT;
+    visit.effect = effect;
+
+    P_MobjThinker(&visit.ext.thinker);
+
+    if (links[0] != effect->snext || links[1] != effect->sprev || links[2] != effect->touching_sectorlist)
+        I_Error("P_EffectThinker: links of %i changed", visit.ext.mo.type);
+
+    if (visit.ext.thinker.function == TH_REMOVETHING)
+    {
+        S_StopSound(effect);
+        th->function = TH_REMOVEEFFECT;
+        return;
+    }
+
+    if (visit.ext.thinker.function != TH_MOBJ || visit.ext.mo.x != effect->x || visit.ext.mo.y != effect->y
+        || visit.ext.mo.floorz != effect->floorz || visit.ext.mo.ceilingz != effect->ceilingz)
+        I_Error("P_EffectThinker: %i moved", visit.ext.mo.type);
+    P_EndEffect(&visit);
+}
+
+void P_RemoveEffectDelayed(thinker_t* th)
+{
+    P_UnlinkThinker(th);
+    P_EffectOfThinker(th)->type = MT_NOTHING;
+}
+
+
 static uint8_t P_ThinkerFunctionForType(mobjtype_t type, mobj_t* mobj)
 {
     //Full thinking ability.
@@ -1359,13 +1520,14 @@ void P_SpawnMapThing(const mapthing_t* mthing)
 //
 void P_SpawnPuff(fixed_t x,fixed_t y,fixed_t z)
   {
-  mobj_t* th;
+  effectvisit_t visit;
+  mobj_t* th = &visit.ext.mo;
   // killough 5/5/98: remove dependence on order of evaluation:
   int32_t t = P_Random();
   z += (t - P_Random())<<10;
 
-  th = P_SpawnMobj (x,y,z, MT_PUFF);
-  P_Ext(th)->momz = FRACUNIT;
+  P_BeginEffect(x, y, z, MT_PUFF, &visit);
+  visit.ext.momz = FRACUNIT;
   th->tics -= P_Random()&3;
 
   if (th->tics < 1)
@@ -1375,6 +1537,7 @@ void P_SpawnPuff(fixed_t x,fixed_t y,fixed_t z)
 
   if (P_IsAttackRangeMeleeRange())
     P_SetMobjState (th, S_PUFF3);
+  P_EndEffect(&visit);
   }
 
 
@@ -1383,12 +1546,13 @@ void P_SpawnPuff(fixed_t x,fixed_t y,fixed_t z)
 //
 void P_SpawnBlood(fixed_t x,fixed_t y,fixed_t z,int16_t damage)
   {
-  mobj_t* th;
+  effectvisit_t visit;
+  mobj_t* th = &visit.ext.mo;
   // killough 5/5/98: remove dependence on order of evaluation:
   fixed_t t = P_Random();
   z += (t - P_Random())<<10;
-  th = P_SpawnMobj(x,y,z, MT_BLOOD);
-  P_Ext(th)->momz = FRACUNIT*2;
+  P_BeginEffect(x, y, z, MT_BLOOD, &visit);
+  visit.ext.momz = FRACUNIT*2;
   th->tics -= P_Random()&3;
 
   if (th->tics < 1)
@@ -1398,6 +1562,7 @@ void P_SpawnBlood(fixed_t x,fixed_t y,fixed_t z,int16_t damage)
     P_SetMobjState (th,S_BLOOD2);
   else if (damage < 9)
     P_SetMobjState (th,S_BLOOD3);
+  P_EndEffect(&visit);
   }
 
 

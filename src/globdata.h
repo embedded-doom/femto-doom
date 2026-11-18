@@ -254,6 +254,16 @@ typedef struct restchunk_s
 
 extern restchunk_t* _g_restchunks;
 
+// Puffs, blood and teleport fog, in chunks allocated as they spawn.
+#define EFFECTCHUNK 4
+typedef struct effectchunk_s
+{
+  struct effectchunk_s* next;
+  effectmobj_t effect[EFFECTCHUNK];
+} effectchunk_t;
+
+extern effectchunk_t* _g_effectchunks;
+
 
 //******************************************************************************
 //p_switch.c

@@ -248,6 +248,8 @@ static const think_t thinkers[] = {
     [TH_STROBE]      = T_StrobeFlash,
     [TH_GLOW]        = T_Glow,
     [TH_SCROLL]      = T_Scroll,
+    [TH_EFFECT]      = P_EffectThinker,
+    [TH_REMOVEEFFECT] = P_RemoveEffectDelayed,
 };
 
 static void P_RunThinkers (void)

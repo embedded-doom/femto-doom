@@ -246,7 +246,8 @@ typedef char assertMobjExtSize[sizeof(mobjext_t) == 80 ? 1 : -1];
 // A form in the high bits of type marks a thing in the sector and block lists that is no
 // mobj_t. Every form starts like a mobj_t up to its sprite, which a form uses for itself.
 #define FORM_REST   0x40
-#define FORM_MASK   0x40
+#define FORM_EFFECT 0x80
+#define FORM_MASK   0xc0
 
 // A dropped item at rest: only its sector changes it again, and z is its floorz.
 typedef struct
@@ -274,6 +275,31 @@ typedef char assertRestHead[offsetof(restmobj_t, snext) == offsetof(mobj_t, snex
                             && offsetof(restmobj_t, bnext) == offsetof(mobj_t, bnext)
                             && offsetof(restmobj_t, bprev) == offsetof(mobj_t, bprev) ? 1 : -1];
 
+// A puff, blood or teleport fog: it has no block links, and of its momentum only momz.
+typedef struct
+{
+    fixed_t             x;
+    fixed_t             y;
+    zref_t              snext;
+    zref_t              sprev;
+    int16_t             subsector;
+    mobjtype_t          type;   // with FORM_EFFECT
+    int8_t              tics;
+    fixed_t             z;
+    zref_t              touching_sectorlist;
+    int16_t             floorz;
+    int16_t             ceilingz;
+    int16_t             state;
+    int8_t              momz;   // in FRACUNIT
+    thinker_t           thinker;
+} effectmobj_t;
+
+typedef char assertEffectSize[sizeof(effectmobj_t) == 36 ? 1 : -1];
+typedef char assertEffectHead[offsetof(effectmobj_t, snext) == offsetof(mobj_t, snext)
+                              && offsetof(effectmobj_t, sprev) == offsetof(mobj_t, sprev)
+                              && offsetof(effectmobj_t, subsector) == offsetof(mobj_t, subsector)
+                              && offsetof(effectmobj_t, type) == offsetof(mobj_t, type) ? 1 : -1];
+
 // The mobj_t a visit to a resting thing works on, with MF_REST set.
 typedef struct
 {
@@ -291,6 +317,13 @@ static inline uint8_t P_Form(const mobj_t* mobj)
 {
     return (uint8_t)mobj->type & FORM_MASK;
 }
+
+// The thinking mobj an effect is while it spawns or thinks.
+typedef struct
+{
+    mobjext_t           ext;
+    effectmobj_t*       effect;
+} effectvisit_t;
 
 static inline const restmobj_t* P_RestOf(const mobj_t* mobj)
 {
@@ -333,6 +366,12 @@ void    P_SpawnDrop(fixed_t x, fixed_t y, mobjtype_t type);
 void    P_RestMobj(restmobj_t* rest, restvisit_t* visit);
 void    P_RestVisited(restvisit_t* visit);
 boolean P_VisitRest(mobj_t* rest, boolean func(mobj_t*));
+void    P_BeginEffect(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, effectvisit_t* visit);
+void    P_EndEffect(effectvisit_t* visit);
+mobj_t* P_SpawnFog(fixed_t x, fixed_t y, fixed_t z);
+void    P_EffectMobj(const effectmobj_t* effect, mobj_t* mobj);
+void    P_EffectThinker(thinker_t* th);
+void    P_RemoveEffectDelayed(thinker_t* th);
 
 void    P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 void    P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int16_t damage);

@@ -98,12 +98,12 @@ boolean EV_Teleport(const line_t* line, int16_t side, mobj_t* thing)
             player->viewz = thing->z + player->viewheight;
 
           // spawn teleport fog and emit sound at source
-          S_StartSound(P_SpawnMobj(oldx, oldy, oldz, MT_TFOG), sfx_telept);
+          S_StartSound(P_SpawnFog(oldx, oldy, oldz), sfx_telept);
 
           // spawn teleport fog and emit sound at destination
-          S_StartSound(P_SpawnMobj(m->x + 20*finecosine(m->angle>>ANGLETOFINESHIFT),
-                                   m->y + 20*finesine(  m->angle>>ANGLETOFINESHIFT),
-                                   thing->z, MT_TFOG),
+          S_StartSound(P_SpawnFog(m->x + 20*finecosine(m->angle>>ANGLETOFINESHIFT),
+                                  m->y + 20*finesine(  m->angle>>ANGLETOFINESHIFT),
+                                  thing->z),
                        sfx_telept);
 
     /* don't move for a bit

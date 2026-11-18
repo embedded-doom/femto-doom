@@ -1475,6 +1475,13 @@ static NOINLINE void R_ProjectRest(mobj_t* thing, int16_t lightlevel)
   R_ProjectSprite(&visit.mo, lightlevel);
 }
 
+static NOINLINE void R_ProjectEffect(mobj_t* thing, int16_t lightlevel)
+{
+  mobj_t mobj;
+  P_EffectMobj((effectmobj_t*)thing, &mobj);
+  R_ProjectSprite(&mobj, lightlevel);
+}
+
 static boolean R_ProjectLoadThing(mobj_t* thing)
 {
   R_ProjectSprite(thing, spritelight);
@@ -1502,8 +1509,10 @@ static void R_AddSprites(int16_t subsec, int16_t lightlevel)
   for (thing = P_Mobj(SEC_THINGS(sec)); thing; thing = P_Mobj(thing->snext))
     if (P_SubsectorSector(thing->subsector) == sec)
     {
-      if (P_Form(thing))
+      if (P_Form(thing) == FORM_REST)
         R_ProjectRest(thing, lightlevel);
+      else if (P_Form(thing))
+        R_ProjectEffect(thing, lightlevel);
       else
         R_ProjectSprite(thing, lightlevel);
     }

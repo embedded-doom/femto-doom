@@ -62,7 +62,9 @@ enum
   TH_FLASH,
   TH_STROBE,
   TH_GLOW,
-  TH_SCROLL
+  TH_SCROLL,
+  TH_EFFECT,
+  TH_REMOVEEFFECT
 };
 
 // The zone reference of the list's head, which is not in the zone; zone blocks are 4-byte
