@@ -244,7 +244,7 @@ typedef struct staticchunk_s
 
 extern staticchunk_t* _g_staticchunks;
 
-// Dropped items at rest, in chunks allocated as they drop.
+// Dropped items and corpses at rest, in chunks allocated as they come to rest.
 #define RESTCHUNK 8
 typedef struct restchunk_s
 {

@@ -1366,6 +1366,9 @@ static void R_ProjectSprite (mobj_t* thing, int16_t lightlevel)
 
     if (sprframe->rotate)
     {
+        if (thing->flags & MF_REST)
+            I_Error("R_ProjectSprite: resting %i turns", thing->type);
+
         // choose a different rotation based on player view
         angle16_t ang = R_PointToAngle(fx, fy);
         rot = (angle16_t)(ang - (angle16_t)(thing->angle >> FRACBITS) + (angle16_t)(ANG45_16 / 2) * 9) >> 13;

@@ -818,7 +818,10 @@ static boolean P_VisitLoadThing(int16_t t, boolean func(mobj_t*))
   if (lt.type < MT_MISC0)
   {
     if (loadrefs[slot])
-      return func(P_Mobj(loadrefs[slot]));
+    {
+      mobj_t* mobj = P_Mobj(loadrefs[slot]);
+      return P_Form(mobj) ? P_VisitRest(mobj, func) : func(mobj);
+    }
     mobjext_t* ext = P_WakeMobj(slot);
     const boolean r = func(&ext->mo);
     P_SettleMobj(slot, ext);

@@ -249,7 +249,7 @@ typedef char assertMobjExtSize[sizeof(mobjext_t) == 80 ? 1 : -1];
 #define FORM_EFFECT 0x80
 #define FORM_MASK   0xc0
 
-// A dropped item at rest: only its sector changes it again, and z is its floorz.
+// A dropped item or a corpse at rest: only its sector changes it again, and z is its floorz.
 typedef struct
 {
     fixed_t             x;
@@ -266,6 +266,9 @@ typedef struct
 } restmobj_t;
 
 #define REST_REMOVED    1
+#define REST_CORPSE     2
+#define REST_XDEATH     4
+#define REST_GIBS       8
 
 typedef char assertRestSize[sizeof(restmobj_t) == 24 ? 1 : -1];
 typedef char assertRestHead[offsetof(restmobj_t, snext) == offsetof(mobj_t, snext)

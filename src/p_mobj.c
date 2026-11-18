@@ -751,34 +751,43 @@ int16_t P_Health(mobj_t* mobj)
     return mobj->flags & MF_STATIC ? 0 : P_Ext(mobj)->health;
 }
 
+static restmobj_t* P_RestCorpse(const mobj_t* mobj, zref_t ref);
+static void P_InitMobj(mobj_t* mobj, fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, void* at);
+
 // A corpse at rest only ever changes again through its sector, so it goes on as a static:
-// the same mobj_t in a static slot, and everything that referred to it refers to that.
+// the same mobj_t in a static slot, and everything that referred to it refers to that. Unless
+// something does, it rests in a resting thing instead.
 static void P_SettleCorpse(mobjext_t* ext)
 {
     mobj_t* old = &ext->mo;
-    mobj_t* mobj = P_NewMobj(MT_MISC0);
-    *mobj = *old;
-    mobj->flags = (old->flags & ~MF_POOLED) | MF_STATIC;
-    const zref_t from = Z_Ref(old), to = Z_Ref(mobj);
-
-    if (!(mobj->flags & MF_INPLACE))
+    const zref_t from = Z_Ref(old);
+    mobj_t* at = (mobj_t*)P_RestCorpse(old, from);
+    if (!at)
     {
-        if (!(mobj->flags & MF_NOSECTOR))
+        at = P_NewMobj(MT_MISC0);
+        *at = *old;
+        at->flags = (old->flags & ~MF_POOLED) | MF_STATIC;
+    }
+    const zref_t to = Z_Ref(at);
+
+    if (!(old->flags & MF_INPLACE))
+    {
+        if (!(old->flags & MF_NOSECTOR))
         {
-            *(zref_t*)Z_Ptr(mobj->sprev) = to;
-            if (mobj->snext)
-                P_Mobj(mobj->snext)->sprev = Z_Ref(&mobj->snext);
+            *(zref_t*)Z_Ptr(old->sprev) = to;
+            if (old->snext)
+                P_Mobj(old->snext)->sprev = Z_Ref(&at->snext);
         }
-        if (!(mobj->flags & MF_NOBLOCKMAP) && mobj->bprev)
+        if (!(old->flags & MF_NOBLOCKMAP) && old->bprev)
         {
-            *(zref_t*)Z_Ptr(mobj->bprev) = to;
-            if (mobj->bnext)
-                P_Mobj(mobj->bnext)->bprev = Z_Ref(&mobj->bnext);
+            *(zref_t*)Z_Ptr(old->bprev) = to;
+            if (old->bnext)
+                P_Mobj(old->bnext)->bprev = Z_Ref(&at->bnext);
         }
     }
-    for (msecnode_t* n = P_Node(mobj->touching_sectorlist); n; n = P_Node(n->m_tnext))
+    for (msecnode_t* n = P_Node(old->touching_sectorlist); n; n = P_Node(n->m_tnext))
         n->m_thing = to;
-    P_MoveLoadRef(ext->loadthing, mobj);
+    P_MoveLoadRef(ext->loadthing, at);
 
     for (thinker_t* th = P_NextThinker(NULL); th; th = P_NextThinker(th))
         if (th->function == TH_MOBJ)
@@ -790,7 +799,7 @@ static void P_SettleCorpse(mobjext_t* ext)
                 e->lastenemy = to;
         }
     if (_g_player.attacker == old)
-        _g_player.attacker = mobj;
+        _g_player.attacker = at;
 
     P_RemoveThing(old);
 }
@@ -942,28 +951,14 @@ static void P_RestLinks(const restmobj_t* rest, zref_t* links)
 // What P_SpawnMobj and P_KillMobj make of an item a monster drops, kept as a resting thing.
 void P_SpawnDrop(fixed_t x, fixed_t y, mobjtype_t type)
 {
-    const mobjinfo_t* info = &mobjinfo[type];
-    const state_t* st = &states[info->spawnstate];
-    if (type < MT_MISC0 || st->tics != -1
-        || (info->flags & (MF_SHOOTABLE | MF_MISSILE | MF_COUNTKILL | MF_NOSECTOR | MF_NOBLOCKMAP)))
+    if (states[mobjinfo[type].spawnstate].tics != -1 || (mobjinfo[type].flags & (MF_NOSECTOR | MF_NOBLOCKMAP)))
         I_Error("P_SpawnDrop: %i does not rest", type);
 
     restmobj_t* rest = P_NewRest();
     mobj_t mobj;
     memset(&mobj, 0, sizeof(mobj));
-    mobj.type  = type;
-    mobj.x     = x;
-    mobj.y     = y;
-    mobj.flags = MF_STATIC | info->flags;
-
-    P_Random(); // only to call random for compatibiltiy
-
-    mobj.state  = info->spawnstate;
-    mobj.tics   = st->tics;
-    mobj.sprite = st->sprite;
-    mobj.frame  = st->frame;
-
-    P_SetThingPositionAs(&mobj, rest);
+    mobj.flags = MF_STATIC;
+    P_InitMobj(&mobj, x, y, ONFLOORZ, type, rest);
 
     rest->x         = x;
     rest->y         = y;
@@ -975,14 +970,86 @@ void P_SpawnDrop(fixed_t x, fixed_t y, mobjtype_t type)
     rest->bnext     = mobj.bnext;
     rest->bprev     = mobj.bprev;
     rest->touching_sectorlist = mobj.touching_sectorlist;
-    rest->floorz    = P_ToQuarters(SEC_FLOORHEIGHT(P_SubsectorSector(mobj.subsector)));
+    rest->floorz    = mobj.floorz;
+}
+
+static int16_t P_FinalState(int16_t state)
+{
+    for (int16_t k = 0; states[state].tics != -1; k++)
+    {
+        if (k == 32)
+            I_Error("P_FinalState: %i does not end", state);
+        state = states[state].nextstate;
+    }
+    return state;
+}
+
+// The flags P_KillMobj and A_Fall leave a monster with, but those only its own thinking reads.
+static uint32_t P_CorpseFlags(const mobjinfo_t* info)
+{
+    return (info->flags & ~(MF_SHOOTABLE | MF_NOGRAVITY | MF_SOLID)) | MF_CORPSE | MF_DROPOFF;
+}
+
+// The flags and state of a resting thing.
+static void P_RestForm(const restmobj_t* rest, uint32_t* flags, int16_t* state)
+{
+    const mobjinfo_t* info = &mobjinfo[rest->type & ~FORM_MASK];
+    if (!(rest->bits & REST_CORPSE))
+    {
+        *flags = info->flags | MF_STATIC | MF_DROPPED | MF_REST;
+        *state = info->spawnstate;
+        return;
+    }
+    *flags = P_CorpseFlags(info) | MF_STATIC | MF_REST;
+    *state = rest->bits & REST_GIBS ? S_GIBS
+           : P_FinalState(rest->bits & REST_XDEATH ? info->xdeathstate : info->deathstate);
+}
+
+// A resting thing for a settled corpse that nothing refers to, if its flags and state are
+// those P_RestForm gives it; else NULL.
+static restmobj_t* P_RestCorpse(const mobj_t* mobj, zref_t ref)
+{
+    const mobjinfo_t* info = &mobjinfo[mobj->type];
+    uint8_t bits;
+    if ((mobj->flags & ~(MF_POOLED | MF_AMBUSH | MF_JUSTHIT | MF_JUSTATTACKED)) != P_CorpseFlags(info))
+        return NULL;
+    if (mobj->state == S_GIBS)
+        bits = REST_CORPSE | REST_GIBS;
+    else if (mobj->state == P_FinalState(info->deathstate))
+        bits = REST_CORPSE;
+    else if (info->xdeathstate && mobj->state == P_FinalState(info->xdeathstate))
+        bits = REST_CORPSE | REST_XDEATH;
+    else
+        return NULL;
+
+    if (_g_player.attacker == mobj || _g_linetarget == mobj)
+        return NULL;
+    for (thinker_t* th = P_NextThinker(NULL); th; th = P_NextThinker(th))
+        if (th->function == TH_MOBJ && (((mobjext_t*)th)->target == ref || ((mobjext_t*)th)->lastenemy == ref))
+            return NULL;
+
+    restmobj_t* rest = P_NewRest();
+    rest->x         = mobj->x;
+    rest->y         = mobj->y;
+    rest->snext     = mobj->snext;
+    rest->sprev     = mobj->sprev;
+    rest->subsector = mobj->subsector;
+    rest->type      = mobj->type | FORM_REST;
+    rest->bits      = bits;
+    rest->bnext     = mobj->bnext;
+    rest->bprev     = mobj->bprev;
+    rest->touching_sectorlist = mobj->touching_sectorlist;
+    rest->floorz    = mobj->floorz;
+    return rest;
 }
 
 void P_RestMobj(restmobj_t* rest, restvisit_t* visit)
 {
     const mobjtype_t type = rest->type & ~FORM_MASK;
-    const mobjinfo_t* info = &mobjinfo[type];
-    const state_t* st = &states[info->spawnstate];
+    uint32_t flags;
+    int16_t state;
+    P_RestForm(rest, &flags, &state);
+    const state_t* st = &states[state];
     mobj_t* mobj = &visit->mo;
     memset(mobj, 0, sizeof(*mobj));
     mobj->x         = rest->x;
@@ -995,35 +1062,32 @@ void P_RestMobj(restmobj_t* rest, restvisit_t* visit)
     mobj->bnext     = rest->bnext;
     mobj->bprev     = rest->bprev;
     mobj->z         = P_FromQuarters(rest->floorz);
-    mobj->flags     = info->flags | MF_STATIC | MF_DROPPED | MF_REST;
+    mobj->flags     = flags;
     mobj->touching_sectorlist = rest->touching_sectorlist;
     mobj->floorz    = rest->floorz;
-    mobj->state     = info->spawnstate;
+    mobj->state     = state;
     mobj->frame     = st->frame;
     mobj->tics      = st->tics;
     visit->rest     = rest;
     P_RestLinks(rest, visit->links);
 }
 
-// Takes back what a visit changed: a resting thing only gets new heights or goes.
+// Takes back what a visit changed: a resting thing only gets new heights, turns to gibs or goes.
 void P_RestVisited(restvisit_t* visit)
 {
     restmobj_t* rest = visit->rest;
     const mobj_t* mobj = &visit->mo;
     zref_t links[5];
+    uint32_t flags;
+    int16_t state;
     P_RestLinks(rest, links);
-    if (memcmp(links, visit->links, sizeof(links)))
-        I_Error("P_RestVisited: links of %i changed", mobj->type);
-
+    if ((rest->bits & REST_CORPSE) && mobj->state == S_GIBS)
+        rest->bits |= REST_GIBS;
     if (mobj->flags & MF_REMOVED)
-    {
         rest->bits |= REST_REMOVED;
-        return;
-    }
-
-    const mobjinfo_t* info = &mobjinfo[mobj->type];
-    if (mobj->x != rest->x || mobj->y != rest->y || mobj->z != P_FromQuarters(mobj->floorz)
-        || mobj->state != info->spawnstate || mobj->flags != (info->flags | MF_STATIC | MF_DROPPED | MF_REST))
+    P_RestForm(rest, &flags, &state);
+    if (memcmp(links, visit->links, sizeof(links)) || mobj->x != rest->x || mobj->y != rest->y
+        || mobj->z != P_FromQuarters(mobj->floorz) || mobj->state != state || (mobj->flags & ~MF_REMOVED) != flags)
         I_Error("P_RestVisited: %i moved", mobj->type);
     rest->floorz = mobj->floorz;
 }
@@ -1088,36 +1152,14 @@ static void P_EffectExt(mobjext_t* ext)
 // What P_SpawnMobj does for a puff, blood or teleport fog; P_EndEffect keeps the result.
 void P_BeginEffect(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, effectvisit_t* visit)
 {
-    const mobjinfo_t* info = &mobjinfo[type];
-    const state_t* st = &states[info->spawnstate];
-    if (type >= MT_MISC0 || !(info->flags & MF_NOBLOCKMAP) || (info->flags & (MF_NOSECTOR | MF_SOLID | MF_SPECIAL
+    if (!(mobjinfo[type].flags & MF_NOBLOCKMAP) || (mobjinfo[type].flags & (MF_NOSECTOR | MF_SOLID | MF_SPECIAL
         | MF_SHOOTABLE | MF_MISSILE | MF_COUNTKILL)))
         I_Error("P_BeginEffect: %i is no effect", type);
 
-    mobjext_t* ext = &visit->ext;
-    mobj_t* mobj = &ext->mo;
-    memset(ext, 0, sizeof(*ext));
-    mobj->type  = type;
-    mobj->x     = x;
-    mobj->y     = y;
-    mobj->flags = info->flags;
-
-    P_Random(); // only to call random for compatibiltiy
-
-    mobj->state  = info->spawnstate;
-    mobj->tics   = st->tics;
-    mobj->sprite = st->sprite;
-    mobj->frame  = st->frame;
-
     effectmobj_t* effect = P_NewEffect();
     visit->effect = effect;
-    P_SetThingPositionAs(mobj, effect);
-
-    mobj->floorz   = P_ToQuarters(SEC_FLOORHEIGHT(P_SubsectorSector(mobj->subsector)));
-    mobj->ceilingz = P_ToQuarters(SEC_CEILINGHEIGHT(P_SubsectorSector(mobj->subsector)));
-    mobj->z = z == ONFLOORZ ? P_FromQuarters(mobj->floorz) : z == ONCEILINGZ ?
-                                  P_FromQuarters(mobj->ceilingz) - P_Height(mobj) : z;
-    P_EffectExt(ext);
+    memset(&visit->ext, 0, sizeof(visit->ext));
+    P_InitMobj(&visit->ext.mo, x, y, z, type, effect);
     effect->thinker.function = TH_EFFECT;
     P_AddThinker(&effect->thinker);
 }
@@ -1177,19 +1219,18 @@ void P_EffectThinker(thinker_t* th)
 
     P_MobjThinker(&visit.ext.thinker);
 
-    if (links[0] != effect->snext || links[1] != effect->sprev || links[2] != effect->touching_sectorlist)
-        I_Error("P_EffectThinker: links of %i changed", visit.ext.mo.type);
+    const boolean removed = visit.ext.thinker.function == TH_REMOVETHING;
+    if (links[0] != effect->snext || links[1] != effect->sprev || links[2] != effect->touching_sectorlist
+        || (!removed && visit.ext.thinker.function != TH_MOBJ) || visit.ext.mo.x != effect->x
+        || visit.ext.mo.y != effect->y || visit.ext.mo.floorz != effect->floorz || visit.ext.mo.ceilingz != effect->ceilingz)
+        I_Error("P_EffectThinker: %i moved", visit.ext.mo.type);
 
-    if (visit.ext.thinker.function == TH_REMOVETHING)
+    if (removed)
     {
         S_StopSound(effect);
         th->function = TH_REMOVEEFFECT;
         return;
     }
-
-    if (visit.ext.thinker.function != TH_MOBJ || visit.ext.mo.x != effect->x || visit.ext.mo.y != effect->y
-        || visit.ext.mo.floorz != effect->floorz || visit.ext.mo.ceilingz != effect->ceilingz)
-        I_Error("P_EffectThinker: %i moved", visit.ext.mo.type);
     P_EndEffect(&visit);
 }
 
@@ -1265,12 +1306,12 @@ mobj_t* P_NewMobj(mobjtype_t type)
     return &ext->mo;
 }
 
-mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
+// What P_SpawnMobj does to the mobj P_NewMobj gave it, with the lists leading to at.
+static void P_InitMobj(mobj_t* mobj, fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, void* at)
 {
     const state_t*    st;
     const mobjinfo_t* info;
 
-    mobj_t*     mobj = P_NewMobj(type);
     mobjext_t*  ext  = NULL;
 
     info = &mobjinfo[type];
@@ -1307,7 +1348,7 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
 
     // set subsector and/or block links
 
-    P_SetThingPosition (mobj);
+    P_SetThingPositionAs (mobj, at);
 
     mobj->floorz   = P_ToQuarters(SEC_FLOORHEIGHT(P_SubsectorSector(mobj->subsector)));
     mobj->ceilingz = P_ToQuarters(SEC_CEILINGHEIGHT(P_SubsectorSector(mobj->subsector)));
@@ -1320,10 +1361,17 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
         ext->dropoffz = mobj->floorz;   /* killough 11/98: for tracking dropoffs */
         ext->thinker.function = P_ThinkerFunctionForType(type, mobj);
         ext->target = ext->lastenemy = 0;
-        P_AddThinker (&ext->thinker);
+        if (at == mobj)
+            P_AddThinker (&ext->thinker);
     }
     if (!((mobj->flags ^ MF_COUNTKILL) & MF_COUNTKILL))
         _g_totallive++;
+}
+
+mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
+{
+    mobj_t* mobj = P_NewMobj(type);
+    P_InitMobj(mobj, x, y, z, type, mobj);
     return mobj;
 }
 
