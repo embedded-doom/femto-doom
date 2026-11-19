@@ -187,6 +187,8 @@ extern const mapsubsector_t *_g_mapsubsectors;
 extern int16_t      _g_numlines;
 extern const uint16_t* _g_seclinefirst;
 extern const int16_t * _g_seclines;
+extern const uint16_t* _g_secadjacentfirst;
+extern const uint16_t* _g_secadjacent;
 extern uint8_t     * _g_linebits;
 extern int16_t      _g_linebytes;
 extern uint16_t     _g_linedonetic;

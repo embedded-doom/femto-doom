@@ -287,6 +287,13 @@ sector_t* LN_BackSector(const line_t* l);
 #define SEC_LINECOUNT(s) (W_FetchUInt16(&_g_seclinefirst[(s) - _g_sectors + 1]) - SEC_LINEFIRST(s))
 #define SEC_LINE(s, i) (&_g_maplines[W_FetchInt16(&_g_seclines[SEC_LINEFIRST(s) + (i)])])
 
+// The sectors across a sector's two-sided lines, each once, with SA_SOUNDBLOCK when every
+// such line blocks sound.
+#define SA_SECTOR      0xFF
+#define SA_SOUNDBLOCK  0x100
+#define SEC_ADJACENTFIRST(s) W_FetchUInt16(&_g_secadjacentfirst[(s) - _g_sectors])
+#define SEC_ADJACENT(i) W_FetchUInt16(&_g_secadjacent[i])
+
 
 // phares 3/14/98
 //

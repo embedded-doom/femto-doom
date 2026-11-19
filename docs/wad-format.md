@@ -95,5 +95,8 @@ skill group the number that do (u16 each); then nine u32 offsets of:
 ### E1MxGL
 
 Each sector's lines, grouped in advance. Header: sector count, subsector count (u16 each);
-three u32 offsets of: where each sector's lines start (u16, count + 1), the lines of each sector
-(u16), the sector of each subsector (u8, 0xFF for none).
+five u32 offsets of: where each sector's lines start (u16, count + 1), the lines of each sector
+(u16), the sector of each subsector (u8, 0xFF for none), where each sector's adjacent sectors
+start (u16, count + 1), and the sectors adjacent to each sector (u16): each sector across one of
+its two-sided lines once, itself for a line with it on both sides, with 0x100 set when every
+such line blocks sound.

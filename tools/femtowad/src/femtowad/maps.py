@@ -12,7 +12,7 @@ import struct
 from collections.abc import Callable, Sequence
 from typing import Any, NamedTuple
 
-from .level import NO_SECTOR, NO_SIDE, Level, Line, Node, Sector, Seg, Side, Subsector, Thing
+from .level import ML_TWOSIDED, NO_SECTOR, NO_SIDE, Level, Line, Node, Sector, Seg, Side, Subsector, Thing
 from .lists import geometry_lists, number_changeable_sides, thing_lists
 from .palette import Color, Palette, closest, parse_palette
 from .wad import Lump, Wad, name8
@@ -32,7 +32,6 @@ SOURCE_LUMPS = (
 )
 SOURCE_NO_SIDE = -1
 MAX_SECTORS = 255
-ML_TWOSIDED = 4
 MTF_NOTSINGLE = 16
 MULTIPLAYER_STARTS = {2, 3, 4, 11}
 ANG90 = 0x4000

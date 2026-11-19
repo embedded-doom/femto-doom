@@ -421,22 +421,18 @@ static void P_RecursiveSound(sector_t* sec, mobj_t* soundtarget)
       sec = &_g_sectors[s];
       const int16_t soundblocks = SEC_BIT(SB_SOUND2, s) != 0;
 
-      for (int16_t i=0; i<SEC_LINECOUNT(sec); i++)
+      const uint16_t last = SEC_ADJACENTFIRST(sec + 1);
+      for (uint16_t i = SEC_ADJACENTFIRST(sec); i < last; i++)
         {
-          sector_t* other;
-          const line_t* check = SEC_LINE(sec, i);
+          const uint16_t adjacent = SEC_ADJACENT(i);
+          sector_t* other = &_g_sectors[adjacent & SA_SECTOR];
 
-          if (!(LN_FLAGS(check) & ML_TWOSIDED))
-            continue;
-
-          P_LineOpening(check);
-
-          if (_g_openrange <= 0)
+          const fixed_t top = MIN(SEC_CEILINGHEIGHT(sec), SEC_CEILINGHEIGHT(other));
+          const fixed_t bottom = MAX(SEC_FLOORHEIGHT(sec), SEC_FLOORHEIGHT(other));
+          if (top <= bottom)
             continue;       // closed door
 
-          other=SIDE_SECTOR(LN_SIDENUM(check, SIDE_SECTOR(LN_SIDENUM(check, 0))==sec));
-
-          if (!(LN_FLAGS(check) & ML_SOUNDBLOCK))
+          if (!(adjacent & SA_SOUNDBLOCK))
             flooded |= P_FloodSector(other, soundblocks);
           else
             if (!soundblocks)

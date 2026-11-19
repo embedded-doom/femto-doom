@@ -15,6 +15,8 @@ MAPBLOCKSHIFT = FRACBITS + 7
 NF_SUBSECTOR = 0x8000
 NO_SIDE = 0xFFFF
 NO_SECTOR = 0xFF
+ML_TWOSIDED = 4
+ML_SOUNDBLOCK = 64
 
 THING = struct.Struct("<hhhBB")
 LINE = struct.Struct("<hhhhHhhHHhhhhhBBh")

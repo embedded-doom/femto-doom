@@ -4,9 +4,9 @@
 
 E1MxTL holds the map's things, spawned in advance: each thing's spawn data, subsector
 and slot per skill, and, in reverse load order, the things in each sector and block and the
-sectors each thing touches. E1MxGL holds the lines, grouped in advance: the lines of each sector
-and the sector of each subsector. Sides play can change, those at the front of lines with a
-special, get a number.
+sectors each thing touches. E1MxGL holds the lines, grouped in advance: the lines of each sector,
+the sector of each subsector and the sectors adjacent to each sector. Sides play can change,
+those at the front of lines with a special, get a number.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import struct
 from collections.abc import Sequence
 
 from .info import MF, MOBJS
-from .level import NO_SECTOR, Level, Side
+from .level import ML_SOUNDBLOCK, ML_TWOSIDED, NO_SECTOR, NO_SIDE, Level, Side
 
 SKILL_GROUPS = (1, 2, 4)
 FIRST_STATIC = next(i for i, mobj in enumerate(MOBJS) if mobj.name == "MISC0")
@@ -24,6 +24,8 @@ MTF_AMBUSH = 8
 NO_MOBJTYPE = 0xFF
 PLAYER_START = 1
 MAX_CHANGEABLE_SIDES = 255
+ADJACENT_SOUNDBLOCK = 0x100
+"""Set on an adjacent sector when every two-sided line between the two blocks sound."""
 
 
 def csr(keys: Sequence[int | None], size: int) -> list[int]:
@@ -135,8 +137,38 @@ def geometry_lists(level: Level) -> bytes:
         first.append(first[-1] + len(sector_lines))
     flat = [number for sector_lines in lines for number in sector_lines]
     sectors = bytes(NO_SECTOR if s is None else s for s in level.subsector_sector)
+    adjacent = adjacent_sectors(level)
+    adjacent_first = [0]
+    for others in adjacent:
+        adjacent_first.append(adjacent_first[-1] + len(others))
+    entries = [
+        other | (ADJACENT_SOUNDBLOCK if blocks else 0) for others in adjacent for other, blocks in others.items()
+    ]
     header = struct.pack("<2H", level.numsectors, len(sectors))
-    return pack_arrays(header, [struct.pack(f"<{len(first)}H", *first), struct.pack(f"<{len(flat)}H", *flat), sectors])
+    return pack_arrays(
+        header,
+        [
+            struct.pack(f"<{len(first)}H", *first),
+            struct.pack(f"<{len(flat)}H", *flat),
+            sectors,
+            struct.pack(f"<{len(adjacent_first)}H", *adjacent_first),
+            struct.pack(f"<{len(entries)}H", *entries),
+        ],
+    )
+
+
+def adjacent_sectors(level: Level) -> list[dict[int, bool]]:
+    """Per sector the sectors across its two-sided lines, itself for a line with it on both sides,
+    each with whether every such line blocks sound."""
+    adjacent: list[dict[int, bool]] = [{} for _ in range(level.numsectors)]
+    for line in level.lines:
+        if not line.flags & ML_TWOSIDED or line.back == NO_SIDE:
+            continue
+        front, back = level.sides[line.front].sector, level.sides[line.back].sector
+        blocks = bool(line.flags & ML_SOUNDBLOCK)
+        for sector, other in ((front, back), (back, front)):
+            adjacent[sector][other] = adjacent[sector].get(other, True) and blocks
+    return adjacent
 
 
 def number_changeable_sides(level: Level) -> list[Side]:

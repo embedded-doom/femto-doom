@@ -77,6 +77,8 @@ const mapsubsector_t *_g_mapsubsectors;
 int16_t      _g_numlines;
 const uint16_t* _g_seclinefirst;
 const int16_t * _g_seclines;
+const uint16_t* _g_secadjacentfirst;
+const uint16_t* _g_secadjacent;
 uint8_t     * _g_linebits;
 int16_t      _g_linebytes;
 uint16_t     _g_linedonetic;
@@ -512,7 +514,7 @@ static void P_GroupLines (int16_t map)
         name[3] = '0' + map;
         const byte* gl = W_GetMapLumpByNum(W_GetMapNumForName(name));
 
-        struct { uint16_t numsectors, numsubsectors; uint32_t first, lines, subsecsector; } h;
+        struct { uint16_t numsectors, numsubsectors; uint32_t first, lines, subsecsector, adjacentfirst, adjacent; } h;
         W_Fetch(gl, &h, sizeof(h));
         if (h.numsectors != _g_numsectors || h.numsubsectors != numsubsectors)
             I_Error("P_GroupLines: %s does not fit the map", name);
@@ -520,6 +522,8 @@ static void P_GroupLines (int16_t map)
         _g_seclinefirst = (const uint16_t*)(gl + h.first);
         _g_seclines     = (const int16_t*)(gl + h.lines);
         _g_subsecsector = gl + h.subsecsector;
+        _g_secadjacentfirst = (const uint16_t*)(gl + h.adjacentfirst);
+        _g_secadjacent      = (const uint16_t*)(gl + h.adjacent);
     }
 }
 
