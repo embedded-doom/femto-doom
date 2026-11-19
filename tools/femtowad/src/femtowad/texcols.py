@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from .wad import ENTRY, HEADER
 
 VIEW_ROWS = 128
-QUANTIZE = 0xFFFC
 
 
 @dataclass(frozen=True)
@@ -44,12 +43,13 @@ def read_texturep(data: bytes, count: int) -> list[WallTexture]:
 
 
 class ColumnReader:
-    def __init__(self, image: bytes, texshift: int, high_detail: bool) -> None:
+    def __init__(self, image: bytes, texshift: int, high_detail: bool, column_shift: int) -> None:
         self.image = image
         _, count, table = HEADER.unpack_from(image)
         self.positions: list[int] = [ENTRY.unpack_from(image, table + ENTRY.size * i)[0] for i in range(count)]
         self.rows = VIEW_ROWS >> texshift
         self.high_detail = high_detail
+        self.column_shift = column_shift
 
     def post_start(self, lump: int, x: int) -> int:
         start = self.positions[lump]
@@ -74,7 +74,7 @@ class ColumnReader:
 
     def composed(self, texture: WallTexture, xc: int) -> bytes:
         if not self.high_detail:
-            xc &= QUANTIZE
+            xc &= ~((1 << self.column_shift) - 1)
         xc &= texture.widthmask
         height = texture.height
         cache = bytearray(VIEW_ROWS)
@@ -100,19 +100,22 @@ class ColumnReader:
         return bytes(cache[: self.rows])
 
 
-def texture_columns(image: bytes, texture1: bytes, texturep: bytes, texshift: int, high_detail: bool) -> bytes:
+def texture_columns(
+    image: bytes, texture1: bytes, texturep: bytes, texshift: int, high_detail: bool, column_shift: int = 2
+) -> bytes:
     count = struct.unpack_from("<i", texture1)[0]
-    reader = ColumnReader(image, texshift, high_detail)
+    reader = ColumnReader(image, texshift, high_detail, column_shift)
+    step = 1 << column_shift
     entries = bytearray()
     columns = bytearray()
     shared = 0
     table = 8 + 8 * count
     for texture in read_texturep(texturep, count):
         cols = [reader.column(texture, xc) for xc in range(texture.widthmask + 1)]
-        cshift = 2 if all(cols[x] == cols[x & ~3] for x in range(len(cols))) else 0
-        shared += cshift == 2
+        cshift = column_shift if all(cols[x] == cols[x & -step] for x in range(len(cols))) else 0
+        shared += cshift == column_shift
         entries += struct.pack("<IHBx", table + len(columns), texture.widthmask, cshift)
         columns += b"".join(cols[:: 1 << cshift])
     header = struct.pack("<BBBxHxx", texshift, high_detail, reader.rows.bit_length() - 1, count)
-    print(f"TEXCOLS: {count} textures, {shared} with columns shared by 4, {len(columns)} B of columns")
+    print(f"TEXCOLS: {count} textures, {shared} with columns shared by {step}, {len(columns)} B of columns")
     return header + entries + columns

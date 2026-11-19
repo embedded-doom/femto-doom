@@ -2,7 +2,8 @@
 # Copyright 2026 Jakob Jungreuthmayer
 """The graphics WAD: the IWAD's lumps the engine reads, in the layout it reads in place.
 
-Walls keep every 4th column and sprites every 2nd, and pictures store equal columns once.
+Walls keep every 2^N-th column and sprites every 2^M-th, by default every 4th and every 2nd,
+and pictures store equal columns once.
 TEXTUREP lists each texture's patches as lump numbers, SPRITES each sprite frame's lumps, and
 TEXCOLS every wall texture's columns. The PC speaker sounds and the songs for one speaker voice
 follow in the order of the engine's sound and music numbers.
@@ -90,7 +91,14 @@ def lumps_read_by_name() -> set[str]:
     return names
 
 
-def build_graphics(iwad: Wad, art: Mapping[str, bytes], texshift: int, high_detail: bool) -> Wad:
+def build_graphics(
+    iwad: Wad,
+    art: Mapping[str, bytes],
+    texshift: int,
+    high_detail: bool,
+    wall_column_shift: int = 2,
+    sprite_column_shift: int = 1,
+) -> Wad:
     """`art` replaces lumps of the same name or is appended. Of lumps sharing a name only the last
     is kept, the one Doom's lookup finds."""
     textures = read_textures(iwad["TEXTURE1"])
@@ -109,12 +117,14 @@ def build_graphics(iwad: Wad, art: Mapping[str, bytes], texshift: int, high_deta
         raise ValueError(f"the IWAD lacks lumps the engine reads: {' '.join(missing)}")
 
     use_zombieman_for_player(wad)
-    shrink_pictures(wad, sprites, patches)
+    shrink_pictures(wad, sprites, patches, wall_column_shift, sprite_column_shift)
     wad["TEXTURE1"] = pack_textures(textures)
     wad["TEXHEIGH"] = struct.pack(f"<{len(textures)}h", *(t.height for t in textures))
     wad.lumps[wad.index("PNAMES")] = Lump("TEXTUREP", texture_patches(wad, textures, pnames))
     wad["SPRITES"] = sprite_frames(wad, sprites)
-    wad["TEXCOLS"] = texture_columns(wad.to_bytes(), wad["TEXTURE1"], wad["TEXTUREP"], texshift, high_detail)
+    wad["TEXCOLS"] = texture_columns(
+        wad.to_bytes(), wad["TEXTURE1"], wad["TEXTUREP"], texshift, high_detail, wall_column_shift
+    )
     add_audio(wad, iwad)
     return wad
 
@@ -156,12 +166,14 @@ def use_zombieman_for_player(wad: Wad) -> None:
     wad["PLAYV0"] = wad["POSSU0"]
 
 
-def shrink_pictures(wad: Wad, sprites: set[str], walls: set[str]) -> None:
+def shrink_pictures(
+    wad: Wad, sprites: set[str], walls: set[str], wall_column_shift: int, sprite_column_shift: int
+) -> None:
     for i, lump in enumerate(wad.lumps):
         if lump.name in sprites:
-            picture = Picture.parse(lump.data).keep_every(2)
+            picture = Picture.parse(lump.data).keep_every(1 << sprite_column_shift)
         elif lump.name in walls:
-            picture = Picture.parse(lump.data).keep_every(4)
+            picture = Picture.parse(lump.data).keep_every(1 << wall_column_shift)
         elif lump.name.startswith(PICTURE_PREFIXES) and lump.name not in RAW_PICTURES:
             picture = Picture.parse(lump.data)
         else:

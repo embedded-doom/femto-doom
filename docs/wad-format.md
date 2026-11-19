@@ -33,7 +33,7 @@ Values are i16 unless noted.
 | `TEXTURE1` | texture count (i32), an offset (i32) per texture, then per texture: name (8 B), width, height, patch count, and per patch x, y, patch number |
 | `TEXTUREP` | an offset (u16) per texture, then per texture: width mask (u16), width, height, whether patches overlap (u8), patch count (u8), and per patch x, y, lump number, patch width |
 | `TEXHEIGH` | height of every texture |
-| `TEXCOLS` | every wall texture's columns, ready to draw. Header: `TEXTURE_SHIFT` (u8), `HIGH_DETAIL` (u8), log2 of rows per column (u8), 0 (u8), texture count (u16), 0 (u16); per texture: offset of its columns (u32), width mask (u16), column shift (u8, 2 when four columns share one), 0 (u8); then the columns, 128 >> `TEXTURE_SHIFT` bytes each |
+| `TEXCOLS` | every wall texture's columns, ready to draw. Header: `TEXTURE_SHIFT` (u8), `HIGH_DETAIL` (u8), log2 of rows per column (u8), 0 (u8), texture count (u16), 0 (u16); per texture: offset of its columns (u32), width mask (u16), column shift (u8, N when 2^N columns share one), 0 (u8); then the columns, 128 >> `TEXTURE_SHIFT` bytes each |
 | `SPRITES` | per sprite, in the order of the `SPR_` numbers in `info.h`, and per frame up to `MAX_SPRITE_FRAMES`: the lump of rotations 1–8, a flip mask (u8), a rotate flag (u8) |
 | `TITLEPIC`, `HELP2`, `WIMAP0` | title screen, help screen, intermission map: raw pixels, the size of the screen |
 | `STBAR` | status bar background: raw pixels, the screen's width × `ST_HEIGHT`; Doom's bar with the arms panel and percent signs drawn in, scaled |
@@ -41,7 +41,7 @@ Values are i16 unless noted.
 | `DEMO3` | the attract-mode demo |
 | `DPPISTOL` … | the PC speaker sounds, consecutive in the order of the `sfx_` numbers in `sounds.h`, as in Doom: 0 (u16), the tone count (u16), a tone (u8) per 1/140 s |
 | `D_E1M1` … | the songs for one PC speaker voice, consecutive in the order of the `mus_` numbers in `sounds.h`: pair count (u16), then per pair a tone (u8) and its length in 1/140 s (u8), or a drum (u8, 128 + kind: kick, snare, hi-hat or cymbal, other) and 0 |
-| status bar, menu and intermission pictures, sprites, wall patches | Doom's patch format (`patch_t` in [i_platform.h](../src/i_platform.h)); the status bar's scaled as the bar is, walls keep every 4th column, sprites every 2nd, equal columns are stored once |
+| status bar, menu and intermission pictures, sprites, wall patches | Doom's patch format (`patch_t` in [i_platform.h](../src/i_platform.h)); the status bar's scaled as the bar is, walls keep every 4th column and sprites every 2nd unless `femtowad wads` is told otherwise, equal columns are stored once |
 
 Other flats, the MIDI music and the sampled sound effects are not in it.
 

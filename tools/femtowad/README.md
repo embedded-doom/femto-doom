@@ -15,6 +15,11 @@ femtowad wads doom1.wad wads/
 | `--screen WxH` | 240x160 | `SCREEN_WIDTH`, `SCREEN_HEIGHT` |
 | `--texture-shift N` | 0 | `TEXTURE_SHIFT` |
 | `--high-detail` | off | `HIGH_DETAIL` |
+| `--wall-column-shift N` | 2 | — |
+| `--sprite-column-shift N` | 1 | — |
+
+Walls keep every 2^N-th column and sprites every 2^N-th. Finer walls need more reads and shimmer
+in the distance at low view sizes.
 
 The format is in [wad-format.md](../../docs/wad-format.md).
 

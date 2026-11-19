@@ -12,6 +12,7 @@ r_view.h, the view tables of every supported view width.
 
 usage: uv run --project tools/femtowad femtowad wads <doom1.wad> <out-dir>
            [--screen WxH] [--texture-shift N] [--high-detail]
+           [--wall-column-shift N] [--sprite-column-shift N]
        uv run --project tools/femtowad femtowad generate [--check]
 """
 
@@ -38,7 +39,9 @@ def find_engine() -> Path | None:
 def wads(args: argparse.Namespace) -> None:
     iwad = Wad.read(args.iwad)
     art = generate_art(iwad, args.screen, lumps_read_by_name())
-    graphics = build_graphics(iwad, art, args.texture_shift, args.high_detail)
+    graphics = build_graphics(
+        iwad, art, args.texture_shift, args.high_detail, args.wall_column_shift, args.sprite_column_shift
+    )
     maps = build_maps(iwad, texture_names(iwad))
     args.out.mkdir(parents=True, exist_ok=True)
     graphics["FEMTOWAD"] = struct.pack("<HHH", WAD_VERSION, *args.screen)
@@ -70,6 +73,16 @@ def main() -> None:
         "--texture-shift", type=int, default=0, choices=range(8), help="the engine's TEXTURE_SHIFT"
     )
     wads_parser.add_argument("--high-detail", action="store_true", help="the engine is built with HIGH_DETAIL")
+    wads_parser.add_argument(
+        "--wall-column-shift",
+        type=int,
+        default=2,
+        choices=range(3),
+        help="walls keep every 2^N-th column; fine walls shimmer in the distance",
+    )
+    wads_parser.add_argument(
+        "--sprite-column-shift", type=int, default=1, choices=range(3), help="sprites keep every 2^N-th column"
+    )
     wads_parser.set_defaults(run=wads)
 
     info_parser = commands.add_parser("generate", help="write the engine's generated sources")
