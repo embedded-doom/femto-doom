@@ -777,6 +777,10 @@ static void R_DrawMaskedColumn(R_DrawColumn_f colfunc, draw_column_vars_t *dcvar
 
             dcvars->texturemid = basetexturemid - (((int32_t)post.topdelta << shift)<<FRACBITS);
 
+            const int32_t frac = (dcvars->texturemid >> COLEXTRABITS) + (int32_t)(yl - CENTER_Y) * dcvars->fracstep;
+            if (frac < 0)
+                dcvars->texturemid -= frac << COLEXTRABITS;
+
             dcvars->yh = yh;
             dcvars->yl = yl;
 
