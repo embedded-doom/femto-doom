@@ -3,7 +3,8 @@
 """TEXCOLS: every wall texture as columns at a fixed stride, the bytes R_DrawColumnWall samples,
 so drawing a wall column needs no patch, directory or column offset lookup.
 
-A column is read from the written graphics WAD, because a short post is sampled past its end.
+A column is read from the written graphics WAD, because a short post is sampled past its end, up to
+the end of its patch.
 """
 
 from __future__ import annotations
@@ -46,7 +47,9 @@ class ColumnReader:
     def __init__(self, image: bytes, texshift: int, high_detail: bool, column_shift: int) -> None:
         self.image = image
         _, count, table = HEADER.unpack_from(image)
-        self.positions: list[int] = [ENTRY.unpack_from(image, table + ENTRY.size * i)[0] for i in range(count)]
+        entries = [ENTRY.unpack_from(image, table + ENTRY.size * i) for i in range(count)]
+        self.positions: list[int] = [pos for pos, _, _ in entries]
+        self.ends: list[int] = [pos + size for pos, size, _ in entries]
         self.rows = VIEW_ROWS >> texshift
         self.high_detail = high_detail
         self.column_shift = column_shift
@@ -70,7 +73,7 @@ class ColumnReader:
                 return bytes(self.rows)
             lump, x = hit
         start = self.post_start(lump, x) + 3
-        return self.image[start : start + self.rows].ljust(self.rows, b"\0")
+        return self.image[start : min(start + self.rows, self.ends[lump])].ljust(self.rows, b"\0")
 
     def composed(self, texture: WallTexture, xc: int) -> bytes:
         if not self.high_detail:
