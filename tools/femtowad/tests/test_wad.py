@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from femtowad.wad import ENTRY, HEADER, MAX_LUMPS, Lump, Wad, name8
+from femtowad.wad import ALIGN, ENTRY, HEADER, MAX_LUMPS, Lump, Wad, name8
 
 
 def directory(data: bytes) -> list[tuple[int, int, bytes]]:
@@ -29,7 +29,7 @@ def test_layout() -> None:
     (a, _, _), (b, _, _), (c, size, _), (d, _, _) = directory(data)
     assert a == b
     assert (c, size) == (0, 0)
-    assert a % 4 == 0 and d % 4 == 0
+    assert a % ALIGN == 0 and d % ALIGN == 0
     assert data[d : d + 5] == b"12345"
 
 

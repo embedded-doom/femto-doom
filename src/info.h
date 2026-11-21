@@ -607,6 +607,6 @@ extern const mobjinfo_t mobjinfo[NUMMOBJTYPES];
 #define MAX_SPRITE_FRAMES 23
 
 // The format of both WADs, kept in their FEMTOWAD lumps.
-#define WAD_VERSION 5
+#define WAD_VERSION 6
 
 #endif

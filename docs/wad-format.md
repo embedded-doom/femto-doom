@@ -17,6 +17,9 @@ the directory.
 The engine reads lump counts and sizes as 16 bits, so lumps of 64 KiB or more are only read
 piecewise. Lumps with the same data share it.
 
+Every lump starts at a multiple of 32 bytes, so a record of 32 bytes or a smaller power of two
+never spans two cache lines of that size. The platform places both WADs at such a multiple, too.
+
 Both WADs hold a lump `FEMTOWAD` with the format version (u16), checked at start-up against
 `WAD_VERSION` in `info.h`. In the graphics WAD the screen width and height follow (u16 each),
 checked against `SCREEN_WIDTH` and `SCREEN_HEIGHT`.
@@ -33,7 +36,7 @@ Values are i16 unless noted.
 | `TEXTURE1` | texture count (i32), an offset (i32) per texture, then per texture: name (8 B), width, height, patch count, and per patch x, y, patch number |
 | `TEXTUREP` | an offset (u16) per texture, then per texture: width mask (u16), width, height, whether patches overlap (u8), patch count (u8), and per patch x, y, lump number, patch width |
 | `TEXHEIGH` | height of every texture |
-| `TEXCOLS` | every wall texture's columns, ready to draw. Header: `TEXTURE_SHIFT` (u8), `HIGH_DETAIL` (u8), log2 of rows per column (u8), 0 (u8), texture count (u16), 0 (u16); per texture: offset of its columns (u32), width mask (u16), column shift (u8, N when 2^N columns share one), 0 (u8); then the columns, 128 >> `TEXTURE_SHIFT` bytes each |
+| `TEXCOLS` | every wall texture's columns, ready to draw. Header: `TEXTURE_SHIFT` (u8), `HIGH_DETAIL` (u8), log2 of rows per column (u8), 0 (u8), texture count (u16), 0 (u16); per texture: offset of its columns (u32), width mask (u16), column shift (u8, N when 2^N columns share one), 0 (u8); then, from the next multiple of 32 bytes, the columns, 128 >> `TEXTURE_SHIFT` bytes each |
 | `SPRITES` | per sprite, in the order of the `SPR_` numbers in `info.h`, and per frame up to `MAX_SPRITE_FRAMES`: the lump of rotations 1–8, a flip mask (u8), a rotate flag (u8) |
 | `TITLEPIC`, `HELP2`, `WIMAP0` | title screen, help screen, intermission map: raw pixels, the size of the screen |
 | `STBAR` | status bar background: raw pixels, the screen's width × `ST_HEIGHT`; Doom's bar with the arms panel and percent signs drawn in, scaled |
@@ -69,7 +72,7 @@ Values are i16 unless noted. A map has at most 255 sectors, 255 textures and 255
 | `SIDEDEFS` | 8 B: x offset, y offset (u8), upper, lower, middle texture (u8), sector (u8), a number from 1 if play can change the side, else 0 (u8) |
 | `SEGS` | 18 B: x1, y1, x2, y2, offset, angle + 90°, side (u16), line (u16), front sector (u8), back sector (u8, 0xFF for none) |
 | `SSECTORS` | as in Doom |
-| `NODES` | as in Doom |
+| `NODES` | 32 B: as in Doom, then 4 B of zeros |
 | `SECTORS` | 12 B: floor height, ceiling height, floor colour, ceiling colour (palette index; -2 sky, -3 nukage), light (u8), special (u8), tag |
 | `REJECT` | as in Doom |
 | `BLOCKMAP` | as in Doom, but a block's list can point into the tail of another one; the engine skips its first entry |

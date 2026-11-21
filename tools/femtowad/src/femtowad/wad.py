@@ -12,6 +12,7 @@ from pathlib import Path
 HEADER = struct.Struct("<4sii")
 ENTRY = struct.Struct("<ii8s")
 MAX_LUMPS = 0x7FFF
+ALIGN = 32
 
 
 def name8(raw: bytes) -> str:
@@ -83,7 +84,7 @@ class Wad:
         self.lumps = [lump for lump in self.lumps if not lump.name.startswith(prefix)]
 
     def to_bytes(self) -> bytes:
-        """The directory first, then each distinct lump once, 4-byte aligned.
+        """The directory first, then each distinct lump once, at a multiple of `ALIGN` bytes.
 
         Lumps with the same data share it. The engine reads the lump count and sizes as 16 bits;
         it reads lumps of 64 KiB or more, such as TEXCOLS, only piecewise.
@@ -93,6 +94,7 @@ class Wad:
         directory = bytearray(HEADER.pack(b"IWAD", len(self.lumps), HEADER.size))
         body = bytearray()
         start = HEADER.size + ENTRY.size * len(self.lumps)
+        start += -start % ALIGN
         stored: dict[bytes, int] = {}
         for lump in self.lumps:
             if not lump.data:
@@ -101,6 +103,6 @@ class Wad:
                 pos = stored[lump.data]
             else:
                 pos = stored[lump.data] = start + len(body)
-                body += lump.data + bytes(-len(lump.data) % 4)
+                body += lump.data + bytes(-len(lump.data) % ALIGN)
             directory += ENTRY.pack(pos, len(lump.data), lump.name.encode("ascii"))
-        return bytes(directory + body)
+        return bytes(directory + bytes(start - len(directory)) + body)

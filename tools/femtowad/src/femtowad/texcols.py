@@ -12,7 +12,7 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 
-from .wad import ENTRY, HEADER
+from .wad import ALIGN, ENTRY, HEADER
 
 VIEW_ROWS = 128
 
@@ -113,6 +113,7 @@ def texture_columns(
     columns = bytearray()
     shared = 0
     table = 8 + 8 * count
+    table += -table % ALIGN
     for texture in read_texturep(texturep, count):
         cols = [reader.column(texture, xc) for xc in range(texture.widthmask + 1)]
         cshift = column_shift if all(cols[x] == cols[x & -step] for x in range(len(cols))) else 0
@@ -121,4 +122,4 @@ def texture_columns(
         columns += b"".join(cols[:: 1 << cshift])
     header = struct.pack("<BBBxHxx", texshift, high_detail, reader.rows.bit_length() - 1, count)
     print(f"TEXCOLS: {count} textures, {shared} with columns shared by {step}, {len(columns)} B of columns")
-    return header + entries + columns
+    return header + entries + bytes(table - 8 - len(entries)) + columns

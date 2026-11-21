@@ -24,6 +24,7 @@ SIDE = struct.Struct("<hBBBBBB")
 SEG = struct.Struct("<hhhhhhHHBB")
 SUBSECTOR = struct.Struct("<hh")
 NODE = struct.Struct("<hhhh8hHH")
+STORED_NODE = struct.Struct("<hhhh8hHH4x")
 SECTOR = struct.Struct("<hhhhBBh")
 
 
@@ -163,7 +164,7 @@ class Level:
             "SIDEDEFS": pack(SIDE, self.sides),
             "SEGS": pack(SEG, self.segs),
             "SSECTORS": pack(SUBSECTOR, self.subsectors),
-            "NODES": pack(NODE, [node.flat() for node in self.nodes]),
+            "NODES": pack(STORED_NODE, [node.flat() for node in self.nodes]),
             "SECTORS": pack(SECTOR, self.sectors),
             "REJECT": self.reject,
             "BLOCKMAP": struct.pack(f"<{len(self.blockmap)}h", *self.blockmap),

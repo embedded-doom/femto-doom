@@ -136,9 +136,10 @@ typedef struct {
   int16_t bbox[2][4];
   // If NF_SUBSECTOR its a subsector, else it's a node of another subtree.
   uint16_t children[2];
+  uint16_t unused[2];
 } mapnode_t;
 
-typedef char assertMapnodeSize[sizeof(mapnode_t) == 28 ? 1 : -1];
+typedef char assertMapnodeSize[sizeof(mapnode_t) == 32 ? 1 : -1];
 
 
 
