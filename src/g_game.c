@@ -242,9 +242,7 @@ void G_BuildTiccmd(void)
     } else if (gamekeydown[key_use] && gamekeydown[key_strafeleft]) {
         newweapon = P_WeaponCycleDown(&_g_player);
         side += sidemove[speed]; //Hack cancel strafe.
-    } else if ((_g_player.attackdown && !P_CheckAmmo(&_g_player)))
-        newweapon = P_SwitchWeapon(&_g_player);
-    else
+    } else
         newweapon = wp_nochange;
 
     if (newweapon != wp_nochange)

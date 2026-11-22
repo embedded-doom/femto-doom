@@ -75,7 +75,6 @@ typedef struct
 
 
 struct player_s;
-weapontype_t P_SwitchWeapon(struct player_s *player);
 boolean P_CheckAmmo(struct player_s *player);
 void P_SetupPsprites(struct player_s *curplayer);
 void P_MovePsprites(struct player_s *curplayer);

@@ -118,65 +118,6 @@ static void P_BringUpWeapon(player_t *player)
   P_SetPsprite(player, ps_weapon, newstate);
 }
 
-// The first set is where the weapon preferences from             // killough,
-// default.cfg are stored. These values represent the keys used   // phares
-// in DOOM2 to bring up the weapon, i.e. 6 = plasma gun. These    //    |
-// are NOT the wp_* constants.                                    //    V
-
-static const weapontype_t weapon_preferences[NUMWEAPONS+1] =
-{
-    6, 9, 4, 3, 2, 8, 5, 7, 1,  // !compatibility preferences
-};
-
-// P_SwitchWeapon checks current ammo levels and gives you the
-// most preferred weapon with ammo. It will not pick the currently
-// raised weapon. When called from P_CheckAmmo this won't matter,
-// because the raised weapon has no ammo anyway. When called from
-// G_BuildTiccmd you want to toggle to a different weapon regardless.
-
-weapontype_t P_SwitchWeapon(player_t *player)
-{
-  const weapontype_t *prefer = &weapon_preferences[0]; // killough 3/22/98
-  weapontype_t currentweapon = player->readyweapon;
-  weapontype_t newweapon = currentweapon;
-  int16_t i = NUMWEAPONS+1;   // killough 5/2/98
-
-  // killough 2/8/98: follow preferences and fix BFG/SSG bugs
-
-  do
-    switch (*prefer++)
-      {
-      case 1:
-        break;
-      case 0:
-        newweapon = wp_fist;
-        break;
-      case 2:
-        if (player->ammo[am_clip])
-          newweapon = wp_pistol;
-        break;
-      case 3:
-        if (player->weaponowned[wp_shotgun] && player->ammo[am_shell])
-          newweapon = wp_shotgun;
-        break;
-      case 4:
-        if (player->weaponowned[wp_chaingun] && player->ammo[am_clip])
-          newweapon = wp_chaingun;
-        break;
-      case 5:
-        if (player->weaponowned[wp_missile] && player->ammo[am_misl])
-          newweapon = wp_missile;
-        break;
-      case 8:
-        if (player->weaponowned[wp_chainsaw])
-          newweapon = wp_chainsaw;
-        break;
-      default:
-        break;
-      }
-  while (newweapon==currentweapon && --i);          // killough 5/2/98
-  return newweapon;
-}
 
 
 static weapontype_t P_CheckCanSwitchWeapon(weapontype_t weapon, player_t* player)
@@ -367,6 +308,23 @@ boolean P_CheckAmmo(player_t *player)
 
   if (ammo == am_noammo || player->ammo[ammo] >= count)
     return true;
+
+  // Out of ammo, pick a weapon to change to.
+
+  if (player->weaponowned[wp_chaingun] && player->ammo[am_clip])
+    player->pendingweapon = wp_chaingun;
+  else if (player->weaponowned[wp_shotgun] && player->ammo[am_shell])
+    player->pendingweapon = wp_shotgun;
+  else if (player->ammo[am_clip])
+    player->pendingweapon = wp_pistol;
+  else if (player->weaponowned[wp_chainsaw])
+    player->pendingweapon = wp_chainsaw;
+  else if (player->weaponowned[wp_missile] && player->ammo[am_misl])
+    player->pendingweapon = wp_missile;
+  else
+    player->pendingweapon = wp_fist;
+
+  P_SetPsprite(player, ps_weapon, weaponinfo[player->readyweapon].downstate);
 
   return false;
 }
