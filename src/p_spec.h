@@ -336,6 +336,8 @@ boolean P_UseSpecialLine(mobj_t* thing, const line_t* line);
 
 // p_lights
 
+uint16_t P_LightSize(int16_t special);
+void* P_NewSpecial(uint16_t size);
 void P_SpawnLightFlash(sector_t* sector);
 
 void P_SpawnStrobeFlash(sector_t* sector, int8_t fastOrSlow, boolean inSync);

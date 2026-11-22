@@ -342,6 +342,17 @@ void P_UpdateSpecials (void)
 
 // killough 3/7/98: Initialize generalized scrolling
 static void P_SpawnScrollers(void);
+static uint16_t P_ScrollersSize(void);
+
+// The lights and scrollers of a map, which only P_SpawnSpecials spawns, share one block.
+static uint8_t* newspecial;
+
+void* P_NewSpecial(uint16_t size)
+{
+  void* special = newspecial;
+  newspecial += size;
+  return special;
+}
 
 //
 // P_SpawnSpecials
@@ -353,6 +364,11 @@ void P_SpawnSpecials (void)
 {
   sector_t*   sector;
   int16_t         i;
+
+  uint16_t size = P_ScrollersSize();
+  for (i = 0; i < _g_numsectors; i++)
+    size += P_LightSize(_g_sectors[i].special);
+  newspecial = size ? Z_CallocLevSpec(size) : NULL;
 
   //  Init special sectors.
   sector = _g_sectors;
@@ -448,12 +464,22 @@ void T_Scroll(thinker_t* th)
 
 static void Add_Scroller(int16_t affectee)
 {
-	scroll_t* s = Z_CallocLevSpec(sizeof *s);
+	scroll_t* s = P_NewSpecial(sizeof *s);
 	s->thinker.function = TH_SCROLL;
 	s->textureoffset = &P_ChangeableSide(affectee)->textureoffset;
 	P_AddThinker(&s->thinker);
 }
 
+
+static uint16_t P_ScrollersSize(void)
+{
+	uint16_t size = 0;
+	const line_t* line = _g_maplines;
+	for (int16_t i = 0; i < _g_numlines; i++, line++)
+		if (LN_SPECIAL(line) == 48)
+			size += sizeof(scroll_t);
+	return size;
+}
 
 // Initialize the scrollers
 static void P_SpawnScrollers(void)

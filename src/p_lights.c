@@ -222,6 +222,25 @@ static int16_t P_FindMinSurroundingLight(sector_t* sector, int16_t max)
 //
 //////////////////////////////////////////////////////////
 
+// The bytes the light P_SpawnSpecials spawns for a sector special takes, 0 for none.
+uint16_t P_LightSize(int16_t special)
+{
+  switch (special)
+  {
+    case 1:
+      return sizeof(lightflash_t);
+    case 2:
+    case 3:
+    case 12:
+    case 13:
+      return sizeof(strobe_t);
+    case 8:
+      return sizeof(glow_t);
+    default:
+      return 0;
+  }
+}
+
 //
 // P_SpawnLightFlash()
 //
@@ -237,7 +256,7 @@ void P_SpawnLightFlash (sector_t* sector)
   // nothing special about it during gameplay
   sector->special = 0;
 
-  flash = Z_CallocLevSpec(sizeof(*flash));
+  flash = P_NewSpecial(sizeof(*flash));
 
   P_AddThinker (&flash->thinker);
 
@@ -263,7 +282,7 @@ void P_SpawnStrobeFlash(sector_t* sector, int8_t fastOrSlow, boolean inSync)
 {
   strobe_t* flash;
 
-  flash = Z_CallocLevSpec(sizeof(*flash));
+  flash = P_NewSpecial(sizeof(*flash));
 
   P_AddThinker (&flash->thinker);
 
@@ -297,7 +316,7 @@ void P_SpawnGlowingLight(sector_t* sector)
 {
   glow_t* g;
 
-  g = Z_CallocLevSpec(sizeof(*g));
+  g = P_NewSpecial(sizeof(*g));
 
   P_AddThinker(&g->thinker);
 
