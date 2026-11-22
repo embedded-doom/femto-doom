@@ -113,9 +113,7 @@ static void P_BringUpWeapon(player_t *player)
   newstate = weaponinfo[player->pendingweapon].upstate;
 
   player->pendingweapon = wp_nochange;
-  // killough 12/98: prevent pistol from starting visibly at bottom of screen:
-  player->psprites[ps_weapon].sy =
-WEAPONBOTTOM+FRACUNIT*2;
+  player->psprites[ps_weapon].sy = WEAPONBOTTOM;
 
   P_SetPsprite(player, ps_weapon, newstate);
 }
