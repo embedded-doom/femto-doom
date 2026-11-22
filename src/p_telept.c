@@ -115,10 +115,6 @@ boolean EV_Teleport(const line_t* line, int16_t side, mobj_t* thing)
 
           P_Ext(thing)->momx = P_Ext(thing)->momy = P_Ext(thing)->momz = 0;
 
-    /* killough 10/98: kill all bobbing momentum too */
-    if (player)
-      player->momx = player->momy = 0;
-
 
 
           return true;

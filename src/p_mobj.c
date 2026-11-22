@@ -354,15 +354,6 @@ static void P_SlideMove(mobj_t* mo)
       P_Ext(mo)->momx = tmxmove;
       P_Ext(mo)->momy = tmymove;
 
-      /* killough 10/98: affect the bobbing the same way (but not voodoo dolls)
-       * cph - DEMOSYNC? */
-  if (P_MobjIsPlayer(mo) && P_MobjIsPlayer(mo)->mo == mo)
-  {
-    if (D_abs(P_MobjIsPlayer(mo)->momx) > D_abs(tmxmove))
-      P_MobjIsPlayer(mo)->momx = tmxmove;
-    if (D_abs(P_MobjIsPlayer(mo)->momy) > D_abs(tmymove))
-      P_MobjIsPlayer(mo)->momy = tmymove;
-  }
     }
   while (!P_TryMove(mo, mo->x+tmxmove, mo->y+tmymove));
 }
@@ -511,12 +502,6 @@ static void P_XYMovement(mobj_t* mo)
             P_SetMobjState(player->mo, S_PLAY);
 
         P_Ext(mo)->momx = P_Ext(mo)->momy = 0;
-
-        /* killough 10/98: kill any bobbing momentum too (except in voodoo dolls)
-       * cph - DEMOSYNC - needs compatibility check?
-       */
-        if (player && player->mo == mo)
-            player->momx = player->momy = 0;
     }
     else
     {
@@ -545,12 +530,6 @@ static void P_XYMovement(mobj_t* mo)
        * reduced fast enough, leading to all sorts of kludges being developed.
        */
 
-
-        if (player && player->mo == mo)     /* Not voodoo dolls */
-        {
-            player->momx = FixedMul32OrigFriction(player->momx);
-            player->momy = FixedMul32OrigFriction(player->momy);
-        }
     }
 }
 
@@ -1398,8 +1377,6 @@ static void P_SpawnPlayer(int16_t playerx, int16_t playery, int8_t playerangle)
   p->extralight    = 0;
   p->fixedcolormap = 0;
   p->viewheight    = VIEWHEIGHT;
-
-  p->momx = p->momy = 0;   // killough 10/98: initialize bobbing to 0.
 
   // setup gun psprite
 

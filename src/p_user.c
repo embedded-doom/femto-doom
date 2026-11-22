@@ -78,8 +78,6 @@ static void P_BobAndThrust(player_t *player, int16_t angle, int8_t move)
 	fixed_t y = FixedMulAngle(move * ORIG_FRICTION_FACTOR,finesine(  angle));
 	P_Ext(player->mo)->momx += x;
 	P_Ext(player->mo)->momy += y;
-	player->momx     += x;
-	player->momy     += y;
 }
 
 //
@@ -120,7 +118,7 @@ static void P_CalcHeight (player_t* player)
    * it causes bobbing jerkiness when the player moves from ice to non-ice,
    * and vice-versa.
    */
-  player->bob = (FixedSquare(player->momx) + FixedSquare(player->momy)) >> 2;
+  player->bob = (FixedSquare(P_Ext(player->mo)->momx) + FixedSquare(P_Ext(player->mo)->momy)) >> 2;
 
   if (player->bob > MAXBOB)
     player->bob = MAXBOB;
