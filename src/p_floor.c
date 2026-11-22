@@ -78,8 +78,6 @@ static boolean P_ThingHeightClip(mobj_t* thing)
 
   thing->floorz = P_ToQuarters(_g_tmfloorz);
   thing->ceilingz = P_ToQuarters(_g_tmceilingz);
-  if (!(thing->flags & MF_STATIC))
-    P_Ext(thing)->dropoffz = P_ToQuarters(_g_tmdropoffz);    /* killough 11/98: remember dropoffs */
 
   if (onfloor)
     {

@@ -165,12 +165,6 @@ static boolean P_LookForPlayers(mobj_t* actor, boolean allaround)
         return false;
 
     P_Ext(actor)->target = Z_Ref(player->mo);
-
-    /* killough 9/9/98: give monsters a threshold towards getting players
-     * (we don't want it to be too easy for a player with dogs :)
-     */
-    P_Ext(actor)->threshold = 60;
-
     return true;
 }
 
@@ -197,7 +191,6 @@ void A_Look(mobj_t* actor)
     const int16_t s = P_SubsectorSector(actor->subsector) - _g_sectors;
     mobj_t* targ = SEC_BIT(SB_HEARD, s) ? P_Mobj(_g_soundtarget) : NULL;
     P_Ext(actor)->threshold = 0; // any shot will wake up
-    P_Ext(actor)->pursuecount = 0;
 
     boolean seen = false;
 
@@ -303,10 +296,6 @@ void A_Chase(mobj_t* actor)
             S_StartSound(actor, mobjinfo[actor->type].attacksound);
 
         P_SetMobjState(actor, mobjinfo[actor->type].meleestate);
-        /* killough 8/98: remember an attack
-      * cph - DEMOSYNC? */
-        if (!mobjinfo[actor->type].missilestate)
-            actor->flags |= MF_JUSTHIT;
         return;
     }
 
@@ -324,25 +313,6 @@ void A_Chase(mobj_t* actor)
         }
     }
 
-
-    if (!P_Ext(actor)->threshold)
-    {
-        if (P_Ext(actor)->pursuecount)
-            P_Ext(actor)->pursuecount--;
-        else
-        {
-            /* Our pursuit time has expired. We're going to think about
-             * changing targets */
-            P_Ext(actor)->pursuecount = BASETHRESHOLD;
-
-          /* Unless (we have a live target
-           *         and we can see it)
-           *  try to find a new one; return if sucessful */
-
-            if (!(P_Ext(actor)->target && P_Health(P_Mobj(P_Ext(actor)->target)) > 0 && P_CheckSight(actor, P_Mobj(P_Ext(actor)->target))) && P_LookForTargets(actor, true))
-                return;
-        }
-    }
 
     // chase towards player
     if (--P_Ext(actor)->movecount<0 || !P_Move(actor))

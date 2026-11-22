@@ -762,8 +762,6 @@ static void P_SettleCorpse(mobjext_t* ext)
             mobjext_t* e = (mobjext_t*)th;
             if (e->target == from)
                 e->target = to;
-            if (e->lastenemy == from)
-                e->lastenemy = to;
         }
     if (_g_player.attacker == old)
         _g_player.attacker = at;
@@ -969,7 +967,7 @@ static restmobj_t* P_RestCorpse(const mobj_t* mobj, zref_t ref)
     if (_g_player.attacker == mobj || _g_linetarget == mobj)
         return NULL;
     for (thinker_t* th = P_NextThinker(NULL); th; th = P_NextThinker(th))
-        if (th->function == TH_MOBJ && (((mobjext_t*)th)->target == ref || ((mobjext_t*)th)->lastenemy == ref))
+        if (th->function == TH_MOBJ && ((mobjext_t*)th)->target == ref)
             return NULL;
 
     restmobj_t* rest = P_NewRest();
@@ -1254,9 +1252,8 @@ static void P_InitMobj(mobj_t* mobj, fixed_t x, fixed_t y, fixed_t z, mobjtype_t
 
     if (ext)
     {
-        ext->dropoffz = mobj->floorz;   /* killough 11/98: for tracking dropoffs */
         ext->thinker.function = P_ThinkerFunctionForType(type, mobj);
-        ext->target = ext->lastenemy = 0;
+        ext->target = 0;
         if (at == mobj)
             P_AddThinker (&ext->thinker);
     }
@@ -1301,7 +1298,6 @@ void P_RemoveMobj(mobj_t* mobj)
   {
     mobjext_t* ext = P_Ext(mobj);
     ext->target    = 0;
-    ext->lastenemy = 0;
   }
   // free block
 

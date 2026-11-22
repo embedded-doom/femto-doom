@@ -696,16 +696,7 @@ void P_DamageMobj(mobj_t* target, mobj_t* inflictor, mobj_t* source, int16_t dam
 
   if (source && source != target && !P_Ext(target)->threshold)
     {
-      /* if not intent on another player, chase after this one
-       *
-       * killough 2/15/98: remember last enemy, to prevent
-       * sleeping early; 2/21/98: Place priority on players
-       * killough 9/9/98: cleaned up, made more consistent:
-       */
-
-      if (!P_Ext(target)->lastenemy || P_Health(P_Mobj(P_Ext(target)->lastenemy)) <= 0 || P_Ext(target)->target != Z_Ref(source)) // remember last enemy - killough
-       P_Ext(target)->lastenemy = P_Ext(target)->target;
-
+      // if not intent on another player, chase after this one
       P_Ext(target)->target    = Z_Ref(source);
       P_Ext(target)->threshold = BASETHRESHOLD;
       if (target->state == mobjinfo[target->type].spawnstate

@@ -631,7 +631,6 @@ static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
   mobj->sprite    = states[mobj->state].sprite;
   mobj->frame     = states[mobj->state].frame;
   mobj->type      = lt.type;
-  ext->dropoffz     = mobj->floorz;
   ext->health       = info->spawnhealth;
   ext->reactiontime = _g_gameskill != sk_nightmare ? info->reactiontime : 0;
   ext->loadthing    = t + 1;

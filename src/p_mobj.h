@@ -201,8 +201,7 @@ typedef struct
     // List: thinker links.
     thinker_t           thinker;
 
-    // killough 11/98: the lowest floor over all contacted Sectors, in quarter units.
-    int16_t             dropoffz;
+    int16_t             health;
 
     // Momentums, used to update position.
     fixed_t             momx;
@@ -212,14 +211,6 @@ typedef struct
     // Thing being chased/attacked (or NULL),
     // also the originator for missiles.
     zref_t              target;     // mobj_t
-
-    // new field: last known enemy -- killough 2/15/98
-    zref_t              lastenemy;  // mobj_t
-
-    int16_t             health;
-
-    // killough 9/9/98: How long a monster pursues a target.
-    uint16_t            pursuecount;
 
     int16_t             movecount;      // when 0, select a new dir
 
@@ -241,7 +232,7 @@ typedef struct
     mobj_t              mo;
 } mobjext_t;
 
-typedef char assertMobjExtSize[sizeof(mobjext_t) == 80 ? 1 : -1];
+typedef char assertMobjExtSize[sizeof(mobjext_t) == 76 ? 1 : -1];
 
 // A form in the high bits of type marks a thing in the sector and block lists that is no
 // mobj_t. Every form starts like a mobj_t up to its sprite, which a form uses for itself.

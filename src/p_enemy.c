@@ -55,9 +55,6 @@
 #include "globdata.h"
 
 
-static fixed_t dropoff_deltax, dropoff_deltay, floorz;
-
-
 //
 // ENEMY THINKING
 // Enemies are always spawned
@@ -188,76 +185,6 @@ static void P_DoNewChaseDir(mobj_t* actor, fixed_t deltax, fixed_t deltay)
 }
 
 //
-// killough 11/98:
-//
-// Monsters try to move away from tall dropoffs.
-//
-// In Doom, they were never allowed to hang over dropoffs,
-// and would remain stuck if involuntarily forced over one.
-// This logic, combined with p_map.c (P_TryMove), allows
-// monsters to free themselves without making them tend to
-// hang over dropoffs.
-
-static boolean PIT_AvoidDropoff(const line_t* line)
-{
-  line_t l;
-  W_Fetch(line, &l, sizeof(l));
-
-  if (LN_BACKSECTOR(line)                                               && // Ignore one-sided linedefs
-      _g_tmbbox[BOXRIGHT]  > (fixed_t)l.bbox[BOXLEFT]   << FRACBITS &&
-      _g_tmbbox[BOXLEFT]   < (fixed_t)l.bbox[BOXRIGHT]  << FRACBITS &&
-      _g_tmbbox[BOXTOP]    > (fixed_t)l.bbox[BOXBOTTOM] << FRACBITS && // Linedef must be contacted
-      _g_tmbbox[BOXBOTTOM] < (fixed_t)l.bbox[BOXTOP]    << FRACBITS &&
-      P_BoxOnLineSide(_g_tmbbox, line) == -1)
-    {
-      fixed_t front = SEC_FLOORHEIGHT(LN_FRONTSECTOR(line));
-      fixed_t back  = SEC_FLOORHEIGHT(LN_BACKSECTOR(line));
-      angle_t angle;
-
-      // The monster must contact one of the two floors,
-      // and the other must be a tall dropoff (more than 24).
-
-      if (back == floorz && front < floorz - FRACUNIT*24)
-  angle = R_PointToAngle2(0,0,(fixed_t)l.dx<<FRACBITS,(fixed_t)l.dy<<FRACBITS);   // front side dropoff
-      else
-  if (front == floorz && back < floorz - FRACUNIT*24)
-    angle = R_PointToAngle2((fixed_t)l.dx<<FRACBITS,(fixed_t)l.dy<<FRACBITS,0,0); // back side dropoff
-  else
-    return true;
-
-      // Move away from dropoff at a standard speed.
-      // Multiple contacted linedefs are cumulative (e.g. hanging over corner)
-      dropoff_deltax -= finesine(  angle >> ANGLETOFINESHIFT)*32;
-      dropoff_deltay += finecosine(angle >> ANGLETOFINESHIFT)*32;
-    }
-  return true;
-}
-
-//
-// Driver for above
-//
-
-static boolean P_AvoidDropoff(mobj_t* actor)
-{
-  int16_t yh=((_g_tmbbox[BOXTOP]   = actor->y+P_Radius(actor))-_g_bmaporgy)>>MAPBLOCKSHIFT;
-  int16_t yl=((_g_tmbbox[BOXBOTTOM]= actor->y-P_Radius(actor))-_g_bmaporgy)>>MAPBLOCKSHIFT;
-  int16_t xh=((_g_tmbbox[BOXRIGHT] = actor->x+P_Radius(actor))-_g_bmaporgx)>>MAPBLOCKSHIFT;
-  int16_t xl=((_g_tmbbox[BOXLEFT]  = actor->x-P_Radius(actor))-_g_bmaporgx)>>MAPBLOCKSHIFT;
-  int16_t bx, by;
-
-  floorz = actor->z;            // remember floor height
-
-  dropoff_deltax = dropoff_deltay = 0;
-
-  // check lines
-
-  P_NextValidCount();
-  for (bx=xl ; bx<=xh ; bx++)
-    for (by=yl ; by<=yh ; by++)
-      P_BlockLinesIterator(bx, by, PIT_AvoidDropoff);  // all contacted lines
-
-  return (dropoff_deltax | dropoff_deltay) != 0;   // Non-zero if movement prescribed
-}
 
 
 //
@@ -269,27 +196,7 @@ static boolean P_AvoidDropoff(mobj_t* actor)
 void P_NewChaseDir(mobj_t* actor)
 {
     mobj_t* target = P_Mobj(P_Ext(actor)->target);
-    fixed_t deltax = target->x - actor->x;
-    fixed_t deltay = target->y - actor->y;
-
-    // killough 8/8/98: sometimes move away from target, keeping distance
-    // Take advantage over an enemy without missiles, by keeping distance
-
-    if (P_FromQuarters(actor->floorz) - P_FromQuarters(P_Ext(actor)->dropoffz) > FRACUNIT*24 &&
-            actor->z <= P_FromQuarters(actor->floorz) &&
-            !(actor->flags & MF_DROPOFF) &&
-            P_AvoidDropoff(actor)) /* Move away from dropoff */
-    {
-        P_DoNewChaseDir(actor, dropoff_deltax, dropoff_deltay);
-
-        // If moving away from dropoff, set movecount to 1 so that
-        // small steps are taken to get monster away from dropoff.
-
-        P_Ext(actor)->movecount = 1;
-        return;
-    }
-
-    P_DoNewChaseDir(actor, deltax, deltay);
+    P_DoNewChaseDir(actor, target->x - actor->x, target->y - actor->y);
 }
 
 
