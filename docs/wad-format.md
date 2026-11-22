@@ -75,7 +75,7 @@ Values are i16 unless noted. A map has at most 255 sectors, 255 textures and 255
 | `NODES` | 32 B: as in Doom, then 4 B of zeros |
 | `SECTORS` | 12 B: floor height, ceiling height, floor colour, ceiling colour (palette index; -2 sky, -3 nukage), light (u8), special (u8), tag |
 | `REJECT` | as in Doom |
-| `BLOCKMAP` | as in Doom, but a block's list can point into the tail of another one; the engine skips its first entry |
+| `BLOCKMAP` | as in Doom, but a block's list can point into the tail of another one; the engine skips its first entry and checks linedef 0 instead, as Doom does |
 
 Play can change the sides at the front of lines with a special. Equal sides of other lines are
 stored once.

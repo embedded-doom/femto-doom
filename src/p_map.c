@@ -908,12 +908,7 @@ static boolean PTR_ShootTraverse (intercept_t* in)
       // it's a sky hack wall
 
       if  (LN_BACKSECTOR(li) && SEC_CEILINGSKY(LN_BACKSECTOR(li)))
-
-        // fix bullet-eaters -- killough:
-        // WARNING: Almost all demos will lose sync without this
-        // demo_compatibility flag check!!! killough 1/18/98
-        if (SEC_CEILINGHEIGHT(LN_BACKSECTOR(li)) < z)
-          return false;
+        return false;
     }
 
     // Spawn bullet puffs.

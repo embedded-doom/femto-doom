@@ -478,12 +478,10 @@ int16_t R_PointInSubsector(fixed_t x, fixed_t y)
 
 static CONSTFUNC int16_t SlopeDiv(uint32_t num, uint32_t den)
 {
-    den = den >> 8;
-
-    if (den == 0)
+    if (den < 512)
         return SLOPERANGE;
 
-    const uint16_t ans = (num << 3) / den;//FixedApproxDiv(num << 3, den) >> FRACBITS;
+    const uint32_t ans = (num << 3) / (den >> 8);
 
     return (ans <= SLOPERANGE) ? ans : SLOPERANGE;
 }

@@ -177,14 +177,7 @@ static void P_HitSlideLine(const line_t* ld)
         lineangle += ANG180;
 
     moveangle = R_PointToAngle2 (0,0, tmxmove, tmymove);
-
-    // killough 3/2/98:
-    // The moveangle+=10 breaks v1.9 demo compatibility in
-    // some demos, so it needs demo_compatibility switch.
-
-    moveangle += 10; // prevents sudden path reversal due to        // phares
-    // rounding error                              //   |
-    deltaangle = moveangle-lineangle;                                 //   V
+    deltaangle = moveangle-lineangle;
     movelen = P_AproxDistance (tmxmove, tmymove);
     //   |
     // phares
@@ -407,13 +400,8 @@ static void P_XYMovement(mobj_t* mo)
     do
     {
         fixed_t ptryx, ptryy;
-        // killough 8/9/98: fix bug in original Doom source:
-        // Large negative displacements were never considered.
-        // This explains the tendency for Mancubus fireballs
-        // to pass through walls.
-        // CPhipps - compatibility optioned
 
-        if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2 || ((xmove < -MAXMOVE/2 || ymove < -MAXMOVE/2)))
+        if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2)
         {
             ptryx = mo->x + xmove/2;
             ptryy = mo->y + ymove/2;

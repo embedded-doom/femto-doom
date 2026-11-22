@@ -1097,18 +1097,10 @@ boolean P_BlockLinesIterator(int16_t x, int16_t y, boolean func(const line_t*))
         return true;
 
     const int16_t offset = W_FetchInt16(&_g_blockmap[y*_g_bmapwidth+x]);
-    const int16_t* list = _g_blockmaplump+offset;     // original was reading         // phares
+    const int16_t* list = _g_blockmaplump+offset+1;
 
-
-    // delmiting 0 as linedef 0     // phares
-
-    // killough 1/31/98: for compatibility we need to use the old method.
-    // Most demos go out of sync, and maybe other problems happen, if we
-    // don't consider linedef 0. For safety this should be qualified.
-
-    list++;     // skip 0 starting delimiter                      // phares
-
-    for (int16_t lineno; (lineno = W_FetchInt16(list)) != -1 ; list++)  // phares
+    // Doom's lists start with linedef 0, so every block checks it first.
+    for (int16_t lineno = 0; lineno != -1; lineno = W_FetchInt16(list++))
     {
         const line_t *mld = &_g_maplines[lineno];
 
