@@ -43,6 +43,10 @@
 #include "i_platform.h"
 
 
+#define POOL_ELEMS 8
+#define POOL_FULL  ((1u << POOL_ELEMS) - 1)
+
+
 typedef struct bmalpool_s {
 	struct bmalpool_s* nextpool;
 	uint32_t               used;
@@ -65,7 +69,7 @@ inline static PUREFUNC int16_t iselem(const bmalpool_t* pool, size_t size, const
 
 	dif -= sizeof(bmalpool_t);
 	dif /= size;
-	return (uint32_t)dif >= CHAR_BIT * sizeof(uint32_t) ? -1 : dif;
+	return (uint32_t)dif >= POOL_ELEMS ? -1 : dif;
 }
 
 
@@ -89,7 +93,7 @@ void* Z_BMalloc(struct block_memory_alloc_s *pzone)
 {
 	bmalpool_t** pool = (bmalpool_t**)&(pzone->firstpool);
 	while (*pool != NULL) {
-		if ((*pool)->used == 0xffffffff) {
+		if ((*pool)->used == POOL_FULL) {
 			pool = &((*pool)->nextpool);
 		} else {
 			size_t n = TrailingZeros(~(*pool)->used);
@@ -103,7 +107,7 @@ void* Z_BMalloc(struct block_memory_alloc_s *pzone)
 
 	// CPhipps: Allocate new memory, initialised to 0
 
-	*pool = newpool = Z_CallocLevel(sizeof(bmalpool_t) + pzone->size * CHAR_BIT * sizeof(uint32_t));
+	*pool = newpool = Z_CallocLevel(sizeof(bmalpool_t) + pzone->size * POOL_ELEMS);
 
 	// Return element 0 from this pool to satisfy the request
 	newpool->used = 1;
