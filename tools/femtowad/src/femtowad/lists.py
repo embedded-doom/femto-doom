@@ -3,10 +3,11 @@
 """Per map lumps that spare the engine the memory of spawning things and grouping lines.
 
 E1MxTL holds the map's things, spawned in advance: each thing's spawn data, subsector
-and slot per skill, and, in reverse load order, the things in each sector and block and the
-sectors each thing touches. E1MxGL holds the lines, grouped in advance: the lines of each sector,
-the sector of each subsector and the sectors adjacent to each sector. Sides play can change,
-those at the front of lines with a special, get a number.
+and slot per skill, the thing in each thinking slot per skill, and, in reverse load order, the
+things in each sector and block and the sectors each thing touches. E1MxGL holds the lines,
+grouped in advance: the lines of each sector, the sector of each subsector and the sectors
+adjacent to each sector. Sides play can change, those at the front of lines with a special,
+get a number.
 """
 
 from __future__ import annotations
@@ -58,7 +59,8 @@ def thing_lists(level: Level) -> bytes:
     for number, mobj in enumerate(MOBJS):
         by_doomednum.setdefault(mobj.doomednum, number)
     counts = [[0, 0] for _ in SKILL_GROUPS]
-    entries = []
+    thinking: list[list[int]] = [[] for _ in SKILL_GROUPS]
+    entries: list[bytes] = []
     sectors: list[int | None] = []
     blocks: list[int | None] = []
     touching: list[list[int]] = []
@@ -74,6 +76,8 @@ def thing_lists(level: Level) -> bytes:
                 if thing.doomednum == PLAYER_START or thing.options & bit:
                     slots[group] = counts[group][static]
                     counts[group][static] += 1
+                    if not static:
+                        thinking[group].append(len(entries))
             info = MOBJS[mobjtype]
             x, y = thing.x << 16, thing.y << 16
             subsector = level.point_subsector(x, y)
@@ -122,7 +126,8 @@ def thing_lists(level: Level) -> bytes:
     header = struct.pack("<4H", numthings, level.numsectors, level.numblocks, numnodes)
     header += struct.pack("<6H", *(c[1] for c in counts), *(c[0] for c in counts))
     arrays = [b"".join(entries)] + [
-        shorts(a) for a in (sectorfirst, blockfirst, ordered, nodefirst, nodesector, nodething, secnodefirst, secnodes)
+        shorts(a)
+        for a in (sectorfirst, blockfirst, ordered, nodefirst, nodesector, nodething, secnodefirst, secnodes, *thinking)
     ]
     return pack_arrays(header, arrays)
 

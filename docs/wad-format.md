@@ -84,7 +84,7 @@ stored once.
 
 The map's things, spawned in advance. Header: thing count, sector count, block count, link
 count; then per skill group (easy, normal, hard) the number of things that never think, then per
-skill group the number that do (u16 each); then nine u32 offsets of:
+skill group the number that do (u16 each); then twelve u32 offsets of:
 
 | Array | Content |
 |---|---|
@@ -94,6 +94,7 @@ skill group the number that do (u16 each); then nine u32 offsets of:
 | link first | where each thing's links start in the next two arrays |
 | link sector, link thing | per link a sector a thing touches, and that thing |
 | sector link first, sector links | per sector its links, the last loaded first |
+| slot things | per skill group the thing in each slot among those that think |
 
 ### E1MxGL
 

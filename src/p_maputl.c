@@ -322,6 +322,7 @@ typedef struct
   uint16_t numthings, numsectors, numblocks, numnodes;
   uint16_t numstatics[3], numthinking[3];
   uint32_t things, sectorfirst, blockfirst, list, nodefirst, nodesector, nodething, secnodefirst, secnodes;
+  uint32_t slotthing[3];
 } loadheader_t;
 
 #define STATICZCHUNK 4
@@ -343,6 +344,7 @@ static const int16_t* tlnodesector;
 static const int16_t* tlnodething;
 static const int16_t* tlsecnodefirst;
 static const int16_t* tlsecnodes;
+static const int16_t* tlslotthing;
 
 static boolean loadingthings;
 static int16_t loadingthing;
@@ -351,7 +353,6 @@ static int16_t numloadthings, numloadnodes, numloadstatics;
 static uint16_t numloadsectors, numloadblocks;
 static zref_t* loadrefs;
 static int16_t numthinking;
-static int16_t* slotthing;
 static uint8_t* sleeprec;
 static uint8_t* statictics;
 static uint8_t* staticmoved;
@@ -402,16 +403,9 @@ void P_BeginLoadThings(int16_t map)
   numloadblocks  = h.numblocks;
   numloadstatics = h.numstatics[skillgroup];
   numthinking = h.numthinking[skillgroup];
+  tlslotthing = (const int16_t*)(tl + h.slotthing[skillgroup]);
   loadrefs    = Z_CallocLevel(numthinking * sizeof(*loadrefs));
-  slotthing   = Z_CallocLevel(numthinking * sizeof(*slotthing));
   sleeprec    = Z_CallocLevel(numthinking);
-  for (int16_t t = 0; t < h.numthings; t++)
-  {
-    loadthing_t lt;
-    W_Fetch(&tlthings[t], &lt, sizeof(lt));
-    if (lt.slot[skillgroup] >= 0 && lt.type < MT_MISC0)
-      slotthing[lt.slot[skillgroup]] = t;
-  }
   statictics  = Z_CallocLevel((numloadstatics + 1) / 2);
   staticmoved = Z_CallocLevel((numloadstatics + 7) / 8);
   staticz     = 0;
@@ -663,15 +657,21 @@ static void P_KeepStaticZ(int16_t slot, const mobj_t* mobj, const fixed_t* old)
 // it, it gets a mobj again, and keeps it if that no longer equals its sleeping form.
 //
 
-static boolean P_Asleep(int16_t slot)
+// The map thing in a thinking slot.
+static int16_t P_SlotThing(int16_t slot)
 {
-  return !loadrefs[slot] && BIT(inplace, slotthing[slot]);
+  return W_FetchInt16(&tlslotthing[slot]);
+}
+
+static boolean P_Asleep(int16_t slot, int16_t t)
+{
+  return !loadrefs[slot] && BIT(inplace, t);
 }
 
 // What P_SpawnMobj, P_SpawnMapThing and the time since have made of a sleeping map thing.
 static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
 {
-  const int16_t t = slotthing[slot];
+  const int16_t t = P_SlotThing(slot);
   loadthing_t lt;
   W_Fetch(&tlthings[t], &lt, sizeof(lt));
   const mobjinfo_t* info = &mobjinfo[lt.type];
@@ -736,10 +736,11 @@ static mobjext_t* P_WakeMobj(int16_t slot)
 static void P_SettleMobj(int16_t slot, mobjext_t* ext)
 {
   uint8_t rec;
-  if (BIT(inplace, slotthing[slot]) && P_SleepForm(slot, ext, &rec))
+  const int16_t t = P_SlotThing(slot);
+  if (BIT(inplace, t) && P_SleepForm(slot, ext, &rec))
     P_Sleep(slot, ext, rec);
   else
-    P_AddLoadThinker(&ext->thinker, slotthing[slot]);
+    P_AddLoadThinker(&ext->thinker, t);
 }
 
 // Runs the sleeping map things before map thing t and skips t, or stops after one whose turn
@@ -747,15 +748,19 @@ static void P_SettleMobj(int16_t slot, mobjext_t* ext)
 int16_t P_RunSleepers(int16_t slot, int16_t t)
 {
   thinker_t* const next = _g_runnext;
-  for (; slot < numthinking && slotthing[slot] <= t; slot++)
-    if (slotthing[slot] < t && P_Asleep(slot))
+  for (; slot < numthinking; slot++)
+  {
+    const int16_t st = P_SlotThing(slot);
+    if (st > t)
+      break;
+    if (st < t && P_Asleep(slot, st))
     {
       const uint8_t rec = sleeprec[slot];
       if ((rec & 15) > 1)
         sleeprec[slot] = rec - 1;
       else
       {
-        _g_runlast = slotthing[slot];
+        _g_runlast = st;
         mobjext_t* ext = P_WakeMobj(slot);
         P_MobjThinker(&ext->thinker);
         P_SettleMobj(slot, ext);
@@ -763,6 +768,7 @@ int16_t P_RunSleepers(int16_t slot, int16_t t)
           return slot + 1;
       }
     }
+  }
   return slot;
 }
 
@@ -805,8 +811,11 @@ void P_MoveLoadRef(int16_t loadthing, mobj_t* mobj)
 boolean P_SleeperOfType(mobjtype_t type)
 {
   for (int16_t slot = 0; slot < numthinking; slot++)
-    if (P_Asleep(slot) && (mobjtype_t)W_FetchUInt8(&tlthings[slotthing[slot]].type) == type)
+  {
+    const int16_t t = P_SlotThing(slot);
+    if (P_Asleep(slot, t) && (mobjtype_t)W_FetchUInt8(&tlthings[t].type) == type)
       return true;
+  }
   return false;
 }
 
