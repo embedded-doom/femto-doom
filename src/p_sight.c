@@ -50,8 +50,6 @@ typedef struct {
   fixed_t sightzstart, t2x, t2y;   // eye z of looker
   divline_t strace;                // from t1 to t2
   fixed_t topslope, bottomslope;   // slopes to top and bottom of target
-  fixed_t bbox[4];
-  fixed_t maxz,minz;               // cph - z optimisations for 2sided lines
 } los_t;
 
 
@@ -60,7 +58,7 @@ static los_t los;
 
 //
 // P_DivlineSide
-// Returns side 0 (front), 1 (back), or 2 (on).
+// Returns side 0 (front), 1 (back), or 2 (on). As in Doom, a horizontal line compares x with its y.
 //
 
 static int8_t P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node)
@@ -68,33 +66,20 @@ static int8_t P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node)
   fixed_t left, right;
   return
     !node->dx ? x == node->x ? 2 : x <= node->x ? node->dy > 0 : node->dy < 0 :
-    !node->dy ? y == node->y ? 2 : y <= node->y ? node->dx < 0 : node->dx > 0 :
+    !node->dy ? x == node->y ? 2 : y <= node->y ? node->dx < 0 : node->dx > 0 :
     (right = ((y - node->y) >> FRACBITS) * (node->dx >> FRACBITS)) <
     (left  = ((x - node->x) >> FRACBITS) * (node->dy >> FRACBITS)) ? 0 :
     right == left ? 2 : 1;
 }
 
 
-static uint16_t PUREFUNC P_InterceptVector2(const divline_t *v2, const divline_t *v1)
+static fixed_t PUREFUNC P_InterceptVector2(const divline_t *v2, const divline_t *v1)
 {
-	fixed_t a = (v1->dy >> FRACBITS) * ((v1->x - v2->x) >> 8);
-	fixed_t b = (v1->dx >> FRACBITS) * ((v2->y - v1->y) >> 8);
-
-	fixed_t num = a + b;
-
-	if (num == 0)
+	fixed_t den = FixedMul(v1->dy >> 8, v2->dx) - FixedMul(v1->dx >> 8, v2->dy);
+	if (den == 0)
 		return 0;
-
-	fixed_t c = FixedMul(v2->dx, v1->dy >> 8);
-	fixed_t d = FixedMul(v2->dy, v1->dx >> 8);
-
-	fixed_t den = c - d;
-
-	if (den == 0 || (den >> 12) == 0)
-		return 0;
-
-	fixed_t r = (num << 4) / (den >> 12);
-	return (uint32_t)r <= 0xffffu ? r : (fixed_t)0xffff;
+	fixed_t num = FixedMul((v1->x - v2->x) >> 8, v1->dy) + FixedMul((v2->y - v1->y) >> 8, v1->dx);
+	return FixedDiv(num, den);
 }
 
 
@@ -134,12 +119,6 @@ static boolean P_CrossSubsector(int16_t num)
         W_Fetch(&_g_maplines[linenum], &maplinecopy, sizeof(maplinecopy));
         const line_t* mapline = &maplinecopy;
 
-        if ((fixed_t)mapline->bbox[BOXLEFT  ]<<FRACBITS > los.bbox[BOXRIGHT ] ||
-            (fixed_t)mapline->bbox[BOXRIGHT ]<<FRACBITS < los.bbox[BOXLEFT  ] ||
-            (fixed_t)mapline->bbox[BOXBOTTOM]<<FRACBITS > los.bbox[BOXTOP   ] ||
-            (fixed_t)mapline->bbox[BOXTOP   ]<<FRACBITS < los.bbox[BOXBOTTOM])
-            continue;
-
         // cph - do what we can before forced to check intersection
         if (mapline->flags & ML_TWOSIDED)
         {
@@ -158,10 +137,6 @@ static boolean P_CrossSubsector(int16_t num)
             // because of floor height differences
             openbottom = SEC_FLOORHEIGHT(front) > SEC_FLOORHEIGHT(back) ?
                         SEC_FLOORHEIGHT(front) : SEC_FLOORHEIGHT(back) ;
-
-            // cph - reject if does not intrude in the z-space of the possible LOS
-            if ((opentop >= los.maxz) && (openbottom <= los.minz))
-                continue;
         }
 
         // Forget this line if it doesn't cross the line of sight
@@ -183,25 +158,22 @@ static boolean P_CrossSubsector(int16_t num)
             continue;
 
 
-        // cph - if bottom >= top or top < minz or bottom > maxz then it must be
-        // solid wrt this LOS
-        if (!(mapline->flags & ML_TWOSIDED) || (openbottom >= opentop) ||
-                (opentop < los.minz) || (openbottom > los.maxz))
+        if (!(mapline->flags & ML_TWOSIDED) || (openbottom >= opentop))
             return false;
 
         // crosses a two sided line
-        uint16_t frac = P_InterceptVector2(&los.strace, &divl);
+        fixed_t frac = P_InterceptVector2(&los.strace, &divl);
 
         if (SEC_FLOORHEIGHT(front) != SEC_FLOORHEIGHT(back))
         {
-            fixed_t slope = frac != 0 ? ((openbottom - los.sightzstart) >> FRACBITS) * FixedReciprocalSmall(frac) : INT32_MAX;
+            fixed_t slope = FixedDiv(openbottom - los.sightzstart, frac);
             if (slope > los.bottomslope)
                 los.bottomslope = slope;
         }
 
         if (SEC_CEILINGHEIGHT(front) != SEC_CEILINGHEIGHT(back))
         {
-            fixed_t slope = frac != 0 ? ((opentop - los.sightzstart) >> FRACBITS) * FixedReciprocalSmall(frac) : INT32_MAX;
+            fixed_t slope = FixedDiv(opentop - los.sightzstart, frac);
             if (slope < los.topslope)
                 los.topslope = slope;
         }
@@ -263,17 +235,6 @@ static boolean P_CrossBSPNode(int16_t bspnum)
 }
 
 
-// Which thing the last result was for. A map thing's mobj can change while it sleeps, so it is
-// known by its load index.
-static uint32_t P_SightKey(mobj_t* t)
-{
-  if (!(t->flags & MF_STATIC) && P_Ext(t)->loadthing)
-    return 0xffff0000U | (uint16_t)P_Ext(t)->loadthing;
-  if ((t->flags & (MF_STATIC | MF_INPLACE)) == (MF_STATIC | MF_INPLACE))
-    return 0xffff0000U | (uint16_t)(t->sprev + 1);
-  return (uint32_t)(uintptr_t)t;
-}
-
 //
 // P_CheckSight
 // Returns true
@@ -284,16 +245,6 @@ static uint32_t P_SightKey(mobj_t* t)
 
 boolean P_CheckSight(mobj_t* t1, mobj_t* t2)
 {
-  static uint32_t prevlat1;
-  static uint32_t prevlat2;
-  static boolean prevr;
-
-  if (prevlat1 == P_SightKey(t1)
-   && prevlat2 == P_SightKey(t2))
-    return prevr;
-  prevlat1 = P_SightKey(t1);
-  prevlat2 = P_SightKey(t2);
-
   const sector_t* s1 = P_SubsectorSector(t1->subsector);
   const sector_t* s2 = P_SubsectorSector(t2->subsector);
   int32_t pnum = (s1-_g_sectors)*_g_numsectors + (s2-_g_sectors);
@@ -304,19 +255,7 @@ boolean P_CheckSight(mobj_t* t1, mobj_t* t2)
   // Check in REJECT table.
 
   if (W_FetchUInt8(&_g_rejectmatrix[pnum>>3]) & (1 << (pnum&7)))   // can't possibly be connected
-  {
-    prevr = false;
-    return prevr;
-  }
-
-  /* killough 11/98: shortcut for melee situations
-   * same subsector? obviously visible
-   * cph - compatibility optioned for demo sync, cf HR06-UV.LMP */
-  if (t1->subsector == t2->subsector)
-  {
-    prevr = true;
-    return prevr;
-  }
+    return false;
 
   // An unobstructed LOS is possible.
   // Now look from eyes of t1 to any part of t2.
@@ -329,19 +268,6 @@ boolean P_CheckSight(mobj_t* t1, mobj_t* t2)
   los.strace.dx = (los.t2x = t2->x) - (los.strace.x = t1->x);
   los.strace.dy = (los.t2y = t2->y) - (los.strace.y = t1->y);
 
-  if (t1->x > t2->x)
-    los.bbox[BOXRIGHT] = t1->x, los.bbox[BOXLEFT] = t2->x;
-  else
-    los.bbox[BOXRIGHT] = t2->x, los.bbox[BOXLEFT] = t1->x;
-
-  if (t1->y > t2->y)
-    los.bbox[BOXTOP] = t1->y, los.bbox[BOXBOTTOM] = t2->y;
-  else
-    los.bbox[BOXTOP] = t2->y, los.bbox[BOXBOTTOM] = t1->y;
-
-  los.maxz = INT32_MAX; los.minz = INT32_MIN;
-
   // the head node is the last node output
-  prevr = P_CrossBSPNode(numnodes-1);
-  return prevr;
+  return P_CrossBSPNode(numnodes-1);
 }
