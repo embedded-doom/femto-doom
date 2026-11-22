@@ -60,13 +60,13 @@ jobs:
         run: |
           make -B -C examples/host SCREEN_WIDTH=320 SCREEN_HEIGHT=200
           examples/host/host wads/320x200/GRAPHICS.WAD wads/320x200/MAPS.WAD -frames 1320 | tee out.txt
-          grep -q "hash 75beb29d3c2f8ebf$" out.txt
+          grep -q "hash 9bb4c7e3ae436c5c$" out.txt
       - name: 80 x 58 view, small limits and tables
         run: |
           make -B -C examples/host VIEW_WINDOW_WIDTH=80 VIEW_WINDOW_HEIGHT=58 \
             DEFINES="MAX_DRAWSEGS=64 MAX_OPENINGS=512 MAX_INTERCEPTS=32 SMALL_TRIG"
           examples/host/host "$WADS/GRAPHICS.WAD" "$WADS/MAPS.WAD" -demo -frames 3000 | tee out.txt
-          grep -q "hash 1cf6d1357a3af3dd$" out.txt
+          grep -q "hash bba42699a65ad0c5$" out.txt
 
   cross-compile:
     name: cross-compile (${{ matrix.name }})

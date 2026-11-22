@@ -90,8 +90,7 @@ static int16_t PUREFUNC P_PointOnLineCopySide(fixed_t x, fixed_t y, const line_t
   return
     !line->dx ? x <= (fixed_t)line->v1.x<<FRACBITS ? line->dy > 0 : line->dy < 0 :
     !line->dy ? y <= (fixed_t)line->v1.y<<FRACBITS ? line->dx < 0 : line->dx > 0 :
-    //FixedMul(y-((fixed_t)line->v1.y<<FRACBITS), line->dx>>FRACBITS) >= FixedMul(line->dy>>FRACBITS, x-((fixed_t)line->v1.x<<FRACBITS));
-    ((y - ((fixed_t)line->v1.y<<FRACBITS)) >> 8) * line->dx >= line->dy * ((x - ((fixed_t)line->v1.x<<FRACBITS)) >> 8);
+    FixedMul(y - ((fixed_t)line->v1.y<<FRACBITS), line->dx) >= FixedMul(line->dy, x - ((fixed_t)line->v1.x<<FRACBITS));
 }
 
 int16_t P_PointOnLineSide(fixed_t x, fixed_t y, const line_t* line)
@@ -153,8 +152,7 @@ static int16_t PUREFUNC P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline
     !line->dx ? x <= line->x ? line->dy > 0 : line->dy < 0 :
     !line->dy ? y <= line->y ? line->dx < 0 : line->dx > 0 :
     (line->dy^line->dx^(x -= line->x)^(y -= line->y)) < 0 ? (line->dy^x) < 0 :
-    //FixedMul(y>>8, line->dx>>8) >= FixedMul(line->dy>>8, x>>8);
-    (y >> 8) * (line->dx >> 16) >= (line->dy >> 16) * (x >> 8);
+    FixedMul(y>>8, line->dx>>8) >= FixedMul(line->dy>>8, x>>8);
 }
 
 //
@@ -170,54 +168,6 @@ static void P_MakeDivline(const line_t* li, divline_t *dl)
 }
 
 
-static inline fixed_t CONSTFUNC FixedDiv(fixed_t a, fixed_t b)
-{
-	if (a < 0)
-	{
-		a = -a;
-		b = -b;
-	}
-
-	uint16_t ibit = 1;
-	while (b < a)
-	{
-		b    <<= 1;
-		ibit <<= 1;
-	}
-
-	int16_t ch = 0;
-	for (; ibit != 0; ibit >>= 1)
-	{
-		if (a >= b)
-		{
-			a  -= b;
-			ch |= ibit;
-		}
-		a <<= 1;
-	}
-
-	uint16_t cl = 0;
-	if (a >= b) {a -= b; cl |= 0x8000;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x4000;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x2000;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x1000;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0800;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0400;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0200;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0100;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0080;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0040;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0020;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0010;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0008;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0004;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0002;} a <<= 1;
-	if (a >= b) {a -= b; cl |= 0x0001;}
-
-	return (((fixed_t)ch) << FRACBITS) | cl;
-}
-
-
 //
 // P_InterceptVector
 // Returns the fractional intercept point
@@ -228,20 +178,11 @@ static inline fixed_t CONSTFUNC FixedDiv(fixed_t a, fixed_t b)
 
 static fixed_t PUREFUNC P_InterceptVector3(const divline_t *v2, const divline_t *v1)
 {
-	fixed_t a = (v1->dy >> FRACBITS) * ((v1->x - v2->x) >> 8);
-	fixed_t b = (v1->dx >> FRACBITS) * ((v2->y - v1->y) >> 8);
-	fixed_t c = FixedMul(v2->dx, v1->dy >> 8);
-	fixed_t d = FixedMul(v2->dy, v1->dx >> 8);
-
-	fixed_t num = a + b;
-	fixed_t den = c - d;
-
-	if (num == 0 || den == 0)
+	fixed_t den = FixedMul(v1->dy >> 8, v2->dx) - FixedMul(v1->dx >> 8, v2->dy);
+	if (den == 0)
 		return 0;
-	else if ((num ^ den) < 0)
-		return -1;
-	else
-		return FixedDiv(num, den);
+	fixed_t num = FixedMul((v1->x - v2->x) >> 8, v1->dy) + FixedMul((v2->y - v1->y) >> 8, v1->dx);
+	return FixedDiv(num, den);
 }
 
 //
@@ -1405,15 +1346,15 @@ boolean P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2,
   {
     mapxstep = 1;
     fixed_t partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
-    ystep = FixedApproxDiv (y2-y1,x2-x1);
-    yintercept = (y1>>MAPBTOFRAC) + FixedMul3216(ystep, partial);
+    ystep = FixedDiv (y2-y1,x2-x1);
+    yintercept = (y1>>MAPBTOFRAC) + FixedMul(partial, ystep);
   }
   else if (xt2 < xt1)
   {
     mapxstep = -1;
     fixed_t partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
-    ystep = FixedApproxDiv (y2-y1,x1-x2);
-    yintercept = (y1>>MAPBTOFRAC) + FixedMul3216(ystep, partial);
+    ystep = FixedDiv (y2-y1,x1-x2);
+    yintercept = (y1>>MAPBTOFRAC) + FixedMul(partial, ystep);
   }
   else // xt2 == xt1
   {
@@ -1427,15 +1368,15 @@ boolean P_PathTraverse(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2,
   {
     mapystep = 1;
     fixed_t partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
-    xstep = FixedApproxDiv (x2-x1,y2-y1);
-    xintercept = (x1>>MAPBTOFRAC) + FixedMul3216(xstep, partial);
+    xstep = FixedDiv (x2-x1,y2-y1);
+    xintercept = (x1>>MAPBTOFRAC) + FixedMul(partial, xstep);
   }
   else if (yt2 < yt1)
   {
     mapystep = -1;
     fixed_t partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
-    xstep = FixedApproxDiv (x2-x1,y1-y2);
-    xintercept = (x1>>MAPBTOFRAC) + FixedMul3216(xstep, partial);
+    xstep = FixedDiv (x2-x1,y1-y2);
+    xintercept = (x1>>MAPBTOFRAC) + FixedMul(partial, xstep);
   }
   else // yt2 == yt1
   {

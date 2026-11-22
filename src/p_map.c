@@ -751,14 +751,14 @@ static boolean PTR_AimTraverse (intercept_t* in)
 
         if (SEC_FLOORHEIGHT(LN_FRONTSECTOR(li)) != SEC_FLOORHEIGHT(LN_BACKSECTOR(li)))
         {
-            slope = dist != 0 ? FixedApproxDiv(_g_openbottom - shootz, dist) : INT32_MAX;
+            slope = FixedDiv(_g_openbottom - shootz, dist);
             if (slope > bottomslope)
                 bottomslope = slope;
         }
 
         if (SEC_CEILINGHEIGHT(LN_FRONTSECTOR(li)) != SEC_CEILINGHEIGHT(LN_BACKSECTOR(li)))
         {
-            slope = dist != 0 ? FixedApproxDiv(_g_opentop - shootz, dist) : INT32_MAX;
+            slope = FixedDiv(_g_opentop - shootz, dist);
             if (slope < topslope)
                 topslope = slope;
         }
@@ -781,12 +781,12 @@ static boolean PTR_AimTraverse (intercept_t* in)
     // check angles to see if the thing can be aimed at
 
     dist = FixedMul (attackrange, in->frac);
-    thingtopslope = dist != 0 ? FixedApproxDiv(th->z + P_Height(th) - shootz, dist) : INT32_MAX;
+    thingtopslope = FixedDiv(th->z + P_Height(th) - shootz, dist);
 
     if (thingtopslope < bottomslope)
         return true;    // shot over the thing
 
-    thingbottomslope = dist != 0 ? FixedApproxDiv(th->z - shootz, dist) : INT32_MAX;
+    thingbottomslope = FixedDiv(th->z - shootz, dist);
 
     if (thingbottomslope > topslope)
         return true;    // shot under the thing
@@ -883,17 +883,17 @@ static boolean PTR_ShootTraverse (intercept_t* in)
     if (LN_FLAGS(li) & ML_TWOSIDED)
     {  // crosses a two sided (really 2s) line
       P_LineOpening (li);
-      fixed_t t = FixedMul3(aimslope, in->frac, attackrange) + shootz;
+      const fixed_t dist = FixedMul(attackrange, in->frac);
 
-      if ((SEC_FLOORHEIGHT(LN_FRONTSECTOR(li))   == SEC_FLOORHEIGHT(LN_BACKSECTOR(li))   || _g_openbottom <= t) &&
-          (SEC_CEILINGHEIGHT(LN_FRONTSECTOR(li)) == SEC_CEILINGHEIGHT(LN_BACKSECTOR(li)) || _g_opentop    >= t))
+      if ((SEC_FLOORHEIGHT(LN_FRONTSECTOR(li))   == SEC_FLOORHEIGHT(LN_BACKSECTOR(li))   || FixedDiv(_g_openbottom - shootz, dist) <= aimslope) &&
+          (SEC_CEILINGHEIGHT(LN_FRONTSECTOR(li)) == SEC_CEILINGHEIGHT(LN_BACKSECTOR(li)) || FixedDiv(_g_opentop - shootz, dist) >= aimslope))
         return true;      // shot continues
     }
 
     // hit line
     // position a bit closer
 
-    frac = in->frac - 4 * FixedReciprocal(attackrange);
+    frac = in->frac - FixedDiv(4*FRACUNIT, attackrange);
     x = _g_trace.x + FixedMul(_g_trace.dx, frac);
     y = _g_trace.y + FixedMul(_g_trace.dy, frac);
     z = shootz + FixedMul3(aimslope, frac, attackrange);
@@ -937,12 +937,12 @@ static boolean PTR_ShootTraverse (intercept_t* in)
   // check angles to see if the thing can be aimed at
 
   dist = FixedMul (attackrange, in->frac);
-  thingtopslope = FixedApproxDiv (th->z+P_Height(th) - shootz , dist);
+  thingtopslope = FixedDiv (th->z+P_Height(th) - shootz , dist);
 
   if (thingtopslope < aimslope)
     return true;  // shot over the thing
 
-  thingbottomslope = FixedApproxDiv (th->z - shootz, dist);
+  thingbottomslope = FixedDiv (th->z - shootz, dist);
 
   if (thingbottomslope > aimslope)
     return true;  // shot under the thing
@@ -950,7 +950,7 @@ static boolean PTR_ShootTraverse (intercept_t* in)
   // hit thing
   // position a bit closer
 
-  frac = in->frac - 10 * FixedReciprocal(attackrange);
+  frac = in->frac - FixedDiv(10*FRACUNIT, attackrange);
 
   x = _g_trace.x + FixedMul(_g_trace.dx, frac);
   y = _g_trace.y + FixedMul(_g_trace.dy, frac);

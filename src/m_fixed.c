@@ -34,6 +34,14 @@
 #define RECIPROCAL16(v) ((v) ? RECIPROCAL_DIV(v) : 0)
 
 
+fixed_t CONSTFUNC FixedDiv(fixed_t a, fixed_t b)
+{
+	if ((D_abs(a) >> 14) >= D_abs(b))
+		return (a ^ b) < 0 ? INT32_MIN : INT32_MAX;
+	return (fixed_t)(((int64_t)a << FRACBITS) / b);
+}
+
+
 fixed_t CONSTFUNC FixedReciprocal(fixed_t v)
 {
 	if ((uint32_t)v <= 0xffffu)

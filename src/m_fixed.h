@@ -84,4 +84,11 @@ fixed_t  CONSTFUNC FixedReciprocalSmall(uint16_t v);
 
 fixed_t CONSTFUNC FixedApproxDiv(fixed_t a, fixed_t b);
 
+
+/*
+ * Fixed Point Division, rounded towards zero as Doom does
+ */
+
+fixed_t CONSTFUNC FixedDiv(fixed_t a, fixed_t b);
+
 #endif
