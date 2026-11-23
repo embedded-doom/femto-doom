@@ -282,9 +282,6 @@ static const int16_t* tlblockfirst;
 static const int16_t* tllist;
 static const int16_t* tlnodefirst;
 static const int16_t* tlnodesector;
-static const int16_t* tlnodething;
-static const int16_t* tlsecnodefirst;
-static const int16_t* tlsecnodes;
 static const int16_t* tlslotthing;
 
 static boolean loadingthings;
@@ -304,7 +301,7 @@ static int16_t changesector = -1;
 static fixed_t changefloor, changeceiling;
 static uint8_t* inplace;
 static uint8_t* nodealive;
-static uint8_t* nodevisited;
+static uint8_t* changed;
 
 #define BIT(bits, i)    ((bits)[(i) >> 3] & (1 << ((i) & 7)))
 #define SETBIT(bits, i) ((bits)[(i) >> 3] |= (1 << ((i) & 7)))
@@ -327,9 +324,6 @@ void P_BeginLoadThings(int16_t map)
   tllist         = (const int16_t*)(tl + h.list);
   tlnodefirst    = (const int16_t*)(tl + h.nodefirst);
   tlnodesector   = (const int16_t*)(tl + h.nodesector);
-  tlnodething    = (const int16_t*)(tl + h.nodething);
-  tlsecnodefirst = (const int16_t*)(tl + h.secnodefirst);
-  tlsecnodes     = (const int16_t*)(tl + h.secnodes);
 
   if (_g_gameskill == sk_baby || _g_gameskill == sk_easy)
     skillgroup = 0;
@@ -354,7 +348,7 @@ void P_BeginLoadThings(int16_t map)
   staticclock = 0;
   inplace     = Z_CallocLevel((numloadthings + 7) / 8);
   nodealive   = Z_CallocLevel((numloadnodes + 7) / 8);
-  nodevisited = Z_CallocLevel((numloadnodes + 7) / 8);
+  changed     = Z_CallocLevel((numloadthings + 7) / 8);
   loadingthings = true;
 }
 
@@ -491,21 +485,12 @@ static void P_StaticPhase(int16_t slot, mobj_t* mobj)
   mobj->sprite = states[state].sprite;
 }
 
-// A sector that moves has already taken its new heights when P_CheckSector adjusts the things
-// touching it, so until then its statics stand at the old ones.
-static boolean P_OwnNodeVisited(int16_t t, int16_t sector)
-{
-  const int16_t last = W_FetchInt16(&tlnodefirst[t + 1]);
-  for (int16_t k = W_FetchInt16(&tlnodefirst[t]); k < last; k++)
-    if (W_FetchInt16(&tlnodesector[k]) == sector)
-      return BIT(nodevisited, k) != 0;
-  return true;
-}
-
-// The heights of a map thing that no moving sector changed yet.
+// The heights of a map thing that no moving sector changed yet. A sector that moves has already
+// taken its new heights when P_CheckSector adjusts the things near it, so until then its map
+// things stand at the old ones.
 static void P_LoadThingHeights(int16_t t, int16_t subsector, mobj_t* mobj)
 {
-  if (P_SubsectorSector(subsector) - _g_sectors == changesector && !P_OwnNodeVisited(t, changesector))
+  if (P_SubsectorSector(subsector) - _g_sectors == changesector && !BIT(changed, t))
   {
     mobj->z        = changefloor;
     mobj->floorz   = P_ToQuarters(changefloor);
@@ -861,50 +846,23 @@ void P_KillLoadNodes(mobj_t* thing)
   }
 }
 
-void P_BeginLoadNodeChange(int16_t sector, fixed_t oldfloor, fixed_t oldceiling)
+void P_BeginLoadChange(int16_t sector, fixed_t oldfloor, fixed_t oldceiling)
 {
-  const int16_t last = W_FetchInt16(&tlsecnodefirst[sector + 1]);
-  for (int16_t j = W_FetchInt16(&tlsecnodefirst[sector]); j < last; j++)
-    CLRBIT(nodevisited, W_FetchInt16(&tlsecnodes[j]));
+  int16_t range[2];
+  W_Fetch(&tlsectorfirst[sector], range, sizeof(range));
+  for (int16_t k = range[0]; k < range[1]; k++)
+    CLRBIT(changed, W_FetchInt16(&tllist[k]));
   changesector  = sector;
   changefloor   = oldfloor;
   changeceiling = oldceiling;
 }
 
-void P_EndLoadNodeChange(void)
+void P_EndLoadChange(void)
 {
   changesector = -1;
 }
 
-static void (*changefunc)(mobj_t*);
-
-static boolean P_ChangeThing(mobj_t* thing)
-{
-  if (!(thing->flags & MF_NOBLOCKMAP))
-    changefunc(thing);
-  return true;
-}
-
-boolean P_ChangeLoadNodeThing(int16_t sector, void func(mobj_t*))
-{
-  const int16_t last = W_FetchInt16(&tlsecnodefirst[sector + 1]);
-  for (int16_t j = W_FetchInt16(&tlsecnodefirst[sector]); j < last; j++)
-  {
-    int16_t k = W_FetchInt16(&tlsecnodes[j]);
-    if (BIT(nodealive, k) && !BIT(nodevisited, k))
-    {
-      SETBIT(nodevisited, k);
-      void (*saved)(mobj_t*) = changefunc;
-      changefunc = func;
-      P_VisitLoadThing(W_FetchInt16(&tlnodething[k]), P_ChangeThing);
-      changefunc = saved;
-      return true;
-    }
-  }
-  return false;
-}
-
-static boolean P_LoadListThings(const int16_t* first, boolean func(mobj_t*))
+static boolean P_LoadListThings(const int16_t* first, boolean func(mobj_t*), boolean change)
 {
   int16_t range[2];
   W_Fetch(first, range, sizeof(range));
@@ -912,15 +870,19 @@ static boolean P_LoadListThings(const int16_t* first, boolean func(mobj_t*))
   {
     int16_t t = W_FetchInt16(&tllist[k]);
     if (BIT(inplace, t))
+    {
+      if (change)
+        SETBIT(changed, t);
       if (!P_VisitLoadThing(t, func))
         return false;
+    }
   }
   return true;
 }
 
 boolean P_SectorLoadThings(int16_t sector, boolean func(mobj_t*))
 {
-  return P_LoadListThings(&tlsectorfirst[sector], func);
+  return P_LoadListThings(&tlsectorfirst[sector], func, false);
 }
 
 //
@@ -1128,18 +1090,33 @@ static int16_t P_ThingBlock(const mobj_t* thing)
   return blocky*_g_bmapwidth+blockx;
 }
 
-boolean P_BlockThingsIterator(int16_t x, int16_t y, boolean func(mobj_t*))
+// A visit may remove the thing and free it.
+static boolean P_BlockThings(int16_t x, int16_t y, boolean func(mobj_t*), boolean change)
 {
-  mobj_t* mobj;
   if (0 <= x && x < _g_bmapwidth && 0 <= y && y < _g_bmapheight)
     {
     const int16_t b = y*_g_bmapwidth+x;
-    for (mobj = P_Mobj(_g_blocklinks[b & (BLOCKBUCKETS - 1)]); mobj; mobj = P_Mobj(mobj->bnext))
+    mobj_t* next;
+    for (mobj_t* mobj = P_Mobj(_g_blocklinks[b & (BLOCKBUCKETS - 1)]); mobj; mobj = next)
+      {
+      next = P_Mobj(mobj->bnext);
       if (P_ThingBlock(mobj) == b && !(P_Form(mobj) ? P_VisitRest(mobj, func) : func(mobj)))
         return false;
-    return P_LoadListThings(&tlblockfirst[b], func);
+      }
+    return P_LoadListThings(&tlblockfirst[b], func, change);
     }
   return true;
+}
+
+boolean P_BlockThingsIterator(int16_t x, int16_t y, boolean func(mobj_t*))
+{
+  return P_BlockThings(x, y, func, false);
+}
+
+// P_BlockThingsIterator for P_CheckSector, between P_BeginLoadChange and P_EndLoadChange.
+void P_ChangeBlockThings(int16_t x, int16_t y, boolean func(mobj_t*))
+{
+  P_BlockThings(x, y, func, true);
 }
 
 //

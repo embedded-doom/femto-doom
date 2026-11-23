@@ -108,10 +108,6 @@ static mobj_t*   usething;
 static boolean telefrag;   /* killough 8/9/98: whether to telefrag at exit */
 
 
-// MAXRADIUS is for precalculated sector block boxes
-#define MAXRADIUS       (32*FRACUNIT)
-
-
 boolean P_IsAttackRangeMeleeRange(void)
 {
 	return attackrange == MELEERANGE;

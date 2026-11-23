@@ -529,9 +529,8 @@ static void P_GroupLines (int16_t map)
 
 
 // A sector's sound origin, the centre of its lines' bounding box.
-void P_SectorSoundOrg(const sector_t* sector, fixed_t* x, fixed_t* y)
+static void P_SectorBBox(const sector_t* sector, fixed_t* bbox)
 {
-    fixed_t bbox[4];
     M_ClearBox(bbox);
 
     for(int16_t l = 0; l < SEC_LINECOUNT(sector); l++)
@@ -541,9 +540,31 @@ void P_SectorSoundOrg(const sector_t* sector, fixed_t* x, fixed_t* y)
         M_AddToBox (bbox, (fixed_t)v[0].x<<FRACBITS, (fixed_t)v[0].y<<FRACBITS);
         M_AddToBox (bbox, (fixed_t)v[1].x<<FRACBITS, (fixed_t)v[1].y<<FRACBITS);
     }
+}
+
+void P_SectorSoundOrg(const sector_t* sector, fixed_t* x, fixed_t* y)
+{
+    fixed_t bbox[4];
+    P_SectorBBox(sector, bbox);
 
     *x = bbox[BOXRIGHT]/2+bbox[BOXLEFT]/2;
     *y = bbox[BOXTOP]/2+bbox[BOXBOTTOM]/2;
+}
+
+// The blocks whose things can touch the sector, as Doom's P_GroupLines finds them.
+void P_SectorBlockBox(const sector_t* sector, int16_t* box)
+{
+    fixed_t bbox[4];
+    P_SectorBBox(sector, bbox);
+
+    int16_t block = (bbox[BOXTOP]-_g_bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
+    box[BOXTOP] = block >= _g_bmapheight ? _g_bmapheight-1 : block;
+    block = (bbox[BOXBOTTOM]-_g_bmaporgy-MAXRADIUS)>>MAPBLOCKSHIFT;
+    box[BOXBOTTOM] = block < 0 ? 0 : block;
+    block = (bbox[BOXRIGHT]-_g_bmaporgx+MAXRADIUS)>>MAPBLOCKSHIFT;
+    box[BOXRIGHT] = block >= _g_bmapwidth ? _g_bmapwidth-1 : block;
+    block = (bbox[BOXLEFT]-_g_bmaporgx-MAXRADIUS)>>MAPBLOCKSHIFT;
+    box[BOXLEFT] = block < 0 ? 0 : block;
 }
 
 

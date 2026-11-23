@@ -42,6 +42,7 @@
 #include "p_inter.h"
 #include "p_map.h"
 #include "p_maputl.h"
+#include "p_setup.h"
 #include "p_spec.h"
 #include "p_tick.h"
 #include "s_sound.h"
@@ -155,63 +156,28 @@ static void PIT_ChangeSector(mobj_t* thing)
   }
 
 
-static boolean PIT_ChangeRest(mobj_t* thing)
+static boolean PIT_ChangeThing(mobj_t* thing)
 {
-  if (!(thing->flags & MF_NOBLOCKMAP))
-    PIT_ChangeSector(thing);
+  PIT_ChangeSector(thing);
   return true;
 }
 
 //
 // P_CheckSector
-// jff 3/19/98 added to just check monsters on the periphery
-// of a moving sector instead of all in bounding box of the
-// sector. Both more accurate and faster.
+// Adjusts every thing in the blocks near the sector, as Doom's P_ChangeSector does.
 //
 
 static boolean P_CheckSector(sector_t* sector, fixed_t oldfloor, fixed_t oldceiling)
   {
-  msecnode_t* n;
+  int16_t box[4];
+  P_SectorBlockBox(sector, box);
 
   nofit = false;
-
-  // killough 4/4/98: scan list front-to-back until empty or exhausted,
-  // restarting from beginning after each thing is processed. Avoids
-  // crashes, and is sure to examine all things in the sector, and only
-  // the things which are in the sector, until a steady-state is reached.
-  // Things can arbitrarily be inserted and removed and it won't mess up.
-  //
-  // killough 4/7/98: simplified to avoid using complicated counter
-
-  // Mark all things invalid
-
-  const zref_t sref = Z_Ref(sector);
-  for (n=P_Node(SEC_TOUCHING(sector)); n; n=P_Node(n->m_snext))
-    n->visited = false;
-  P_BeginLoadNodeChange(sector - _g_sectors, oldfloor, oldceiling);
-
-  boolean found;
-  do
-    {
-    found = false;
-    for (n=P_Node(SEC_TOUCHING(sector)); n; n=P_Node(n->m_snext))  // go through list
-      if (n->m_sector == sref && !n->visited)               // unprocessed thing found
-        {
-        n->visited  = true;          // mark thing as processed
-        mobj_t* thing = P_Mobj(n->m_thing);
-        if (P_Form(thing) == FORM_REST)
-          P_VisitRest(thing, PIT_ChangeRest);
-        else if (!P_Form(thing) && !(thing->flags & MF_NOBLOCKMAP)) //jff 4/7/98 don't do these
-          PIT_ChangeSector(thing);    // process it
-        found = true;
-        break;                 // exit and start over
-        }
-    if (!found)
-      found = P_ChangeLoadNodeThing(sector - _g_sectors, PIT_ChangeSector);
-    }
-  while (found);  // repeat from scratch until all things left are marked valid
-
-  P_EndLoadNodeChange();
+  P_BeginLoadChange(sector - _g_sectors, oldfloor, oldceiling);
+  for (int16_t x = box[BOXLEFT]; x <= box[BOXRIGHT]; x++)
+    for (int16_t y = box[BOXBOTTOM]; y <= box[BOXTOP]; y++)
+      P_ChangeBlockThings(x, y, PIT_ChangeThing);
+  P_EndLoadChange();
   return nofit;
   }
 

@@ -43,6 +43,7 @@
 
 
 void P_SectorSoundOrg(const sector_t* sector, fixed_t* x, fixed_t* y);
+void P_SectorBlockBox(const sector_t* sector, int16_t* box);
 void P_SetupLevel(int16_t map);
 void P_Init(void);               /* Called by startup code. */
 
