@@ -405,7 +405,9 @@ void P_PlayerThink (player_t* player)
 
     newweapon = (cmd->buttons & BT_WEAPONMASK)>>BT_WEAPONSHIFT;
 
-    // killough 2/8/98, 3/22/98 -- end of weapon selection changes
+    // The fist means the chainsaw once there is one.
+    if (newweapon == wp_fist && player->weaponowned[wp_chainsaw])
+      newweapon = wp_chainsaw;
 
     if (player->weaponowned[newweapon] && newweapon != player->readyweapon)
 

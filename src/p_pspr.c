@@ -126,7 +126,9 @@ static weapontype_t P_CheckCanSwitchWeapon(weapontype_t weapon, player_t* player
     {
         case wp_fist:
         {
-            return wp_fist;
+            // P_PlayerThink would take the chainsaw instead
+            if (!player->weaponowned[wp_chainsaw])
+                return wp_fist;
         }
         break;
 
