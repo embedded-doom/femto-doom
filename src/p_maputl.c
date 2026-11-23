@@ -812,7 +812,20 @@ int16_t P_LoadIndex(mobj_t* thing)
     return -1;
   if (thing->flags & MF_STATIC)
     return thing->flags & MF_INPLACE ? (int16_t)thing->sprev : -1;
+  if (thing->flags & MF_RESPAWNED)
+    return -1;
   return P_Ext(thing)->loadthing - 1;
+}
+
+// Where map thing t spawns, which P_NightmareRespawn returns its monster to.
+void P_LoadThingSpot(int16_t t, fixed_t* x, fixed_t* y, angle_t* angle, boolean* ambush)
+{
+  loadthing_t lt;
+  W_Fetch(&tlthings[t], &lt, sizeof(lt));
+  *x      = (fixed_t)lt.x << FRACBITS;
+  *y      = (fixed_t)lt.y << FRACBITS;
+  *angle  = ANG45 * (lt.angle & 0x7f);
+  *ambush = (lt.angle & 0x80) != 0;
 }
 
 int16_t P_LoadNodeFirst(int16_t i)

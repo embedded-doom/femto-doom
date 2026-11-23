@@ -96,6 +96,7 @@ void    P_EndLoadThings(void);
 boolean P_SpawnLoadStatic(fixed_t x, fixed_t y, mobjtype_t type);
 boolean P_SectorLoadThings(int16_t sector, boolean func(mobj_t*));
 int16_t P_LoadIndex(mobj_t* thing);
+void    P_LoadThingSpot(int16_t t, fixed_t* x, fixed_t* y, angle_t* angle, boolean* ambush);
 int16_t P_LoadNodeFirst(int16_t i);
 boolean P_LoadNodeAlive(int16_t k);
 int16_t P_LoadNodeSector(int16_t k);

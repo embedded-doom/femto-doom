@@ -608,32 +608,16 @@ static void P_NightmareRespawn(mobj_t* mobj)
 {
     fixed_t      x;
     fixed_t      y;
+    angle_t      angle;
+    boolean      ambush;
     int16_t ss;
     mobj_t*      mo;
 
-    /* haleyjd: stupid nightmare respawning bug fix
-   *
-   * 08/09/00: compatibility added, time to ramble :)
-   * This fixes the notorious nightmare respawning bug that causes monsters
-   * that didn't spawn at level startup to respawn at the point (0,0)
-   * regardless of that point's nature. SMMU and Eternity need this for
-   * script-spawned things like Halif Swordsmythe, as well.
-   *
-   * cph - copied from eternity, except comp_respawnfix becomes comp_respawn
-   *   and the logic is reversed (i.e. like the rest of comp_ it *disables*
-   *   the fix)
-   */
-
-    //ZLB: Everything respawns at its death point.
-    //The spawnpoint is removed from the mobj.
-
-    x = mobj->x;
-    y = mobj->y;
-
-    if(!x && !y)
-    {
+    // Every monster is a map thing, whose spot it returns to.
+    const int16_t loadthing = P_Ext(mobj)->loadthing;
+    if (!loadthing)
         return;
-    }
+    P_LoadThingSpot(loadthing - 1, &x, &y, &angle, &ambush);
 
     // something is occupying its position?
 
@@ -660,10 +644,11 @@ static void P_NightmareRespawn(mobj_t* mobj)
     S_StartSound (mo, sfx_telept);
 
     // spawn the new monster
-    // inherit attributes from deceased one
 
     mo = P_SpawnMobj(x, y, ONFLOORZ, mobj->type);
-    mo->angle = mobj->angle;
+    mo->angle = angle;
+    mo->flags |= MF_RESPAWNED | (ambush ? MF_AMBUSH : 0);
+    P_Ext(mo)->loadthing = loadthing;
     P_Ext(mo)->reactiontime = 18;
 
     // remove the old monster,

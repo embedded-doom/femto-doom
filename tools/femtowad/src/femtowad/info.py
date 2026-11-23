@@ -41,6 +41,7 @@ class MF(IntFlag):
     COUNTKILL = 0x00400000
     COUNTITEM = 0x00800000
     LOOKLATE = 0x01000000
+    RESPAWNED = 0x02000000
     REST = 0x08000000
     POOLED = 0x10000000
     STATIC = 0x20000000
@@ -73,6 +74,7 @@ MF_COMMENTS = {
     MF.COUNTKILL: "On kill, count this enemy object towards intermission kill total. Happy gathering.",
     MF.COUNTITEM: "On picking up, count this item object towards intermission item total.",
     MF.LOOKLATE: "Its first look for players finds none, as Doom's lastlook starting at 1 makes it.",
+    MF.RESPAWNED: "Respawned on Nightmare at the spot of the map thing its loadthing names.",
     MF.REST: "The mobj_t of a visit to a resting thing.",
     MF.INPLACE: "Still linked where the map put it, through the load lists; sprev is its load index.",
 }

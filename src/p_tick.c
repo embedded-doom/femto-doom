@@ -170,9 +170,9 @@ static int16_t P_ThinkerLoadIndex(thinker_t* th)
 {
   if (th->function == TH_MOBJ || th->function == TH_REMOVETHING)
   {
-    const int16_t i = ((mobjext_t*)th)->loadthing;
-    if (i)
-      return i - 1;
+    const mobjext_t* ext = (mobjext_t*)th;
+    if (ext->loadthing && !(ext->mo.flags & MF_RESPAWNED))
+      return ext->loadthing - 1;
   }
   return INT16_MAX;
 }
