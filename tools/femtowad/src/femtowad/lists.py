@@ -4,10 +4,9 @@
 
 E1MxTL holds the map's things, spawned in advance: each thing's spawn data, subsector
 and slot per skill, the thing in each thinking slot per skill, and, in reverse load order, the
-things in each sector and block and the sectors each thing touches. E1MxGL holds the lines,
-grouped in advance: the lines of each sector, the sector of each subsector and the sectors
-adjacent to each sector. Sides play can change, those at the front of lines with a special,
-get a number.
+things in each sector and block. E1MxGL holds the lines, grouped in advance: the lines of each
+sector, the sector of each subsector and the sectors adjacent to each sector. Sides play can
+change, those at the front of lines with a special, get a number.
 """
 
 from __future__ import annotations
@@ -63,13 +62,11 @@ def thing_lists(level: Level) -> bytes:
     entries: list[bytes] = []
     sectors: list[int | None] = []
     blocks: list[int | None] = []
-    touching: list[list[int]] = []
     for thing in level.things:
         mobjtype = 0 if thing.doomednum == PLAYER_START else by_doomednum.get(thing.doomednum)
         slots = [-1] * len(SKILL_GROUPS)
         sector = block = None
         subsector = -1
-        touched: list[int] = []
         if mobjtype is not None:
             static = mobjtype >= FIRST_STATIC
             for group, bit in enumerate(SKILL_GROUPS):
@@ -83,7 +80,6 @@ def thing_lists(level: Level) -> bytes:
             subsector = level.point_subsector(x, y)
             if not info.flags & MF.NOSECTOR:
                 sector = level.subsector_sector[subsector]
-                touched = sorted(level.touched_sectors(x, y, info.radius))
             if not info.flags & MF.NOBLOCKMAP:
                 block = level.block(x, y)
         angle = (thing.angle & 0x7F) | (0x80 if thing.options & MTF_AMBUSH else 0)
@@ -94,7 +90,6 @@ def thing_lists(level: Level) -> bytes:
         )
         sectors.append(sector)
         blocks.append(block)
-        touching.append(touched)
 
     numthings = len(entries)
     sectorfirst = csr(sectors, level.numsectors)
@@ -108,27 +103,9 @@ def thing_lists(level: Level) -> bytes:
                 ordered[fill[key]] = t
                 fill[key] += 1
 
-    nodefirst = [0]
-    nodesector: list[int] = []
-    nodething: list[int] = []
-    for t, touched in enumerate(touching):
-        nodesector += touched
-        nodething += [t] * len(touched)
-        nodefirst.append(len(nodesector))
-    numnodes = len(nodesector)
-    secnodefirst = csr(nodesector, level.numsectors)
-    secnodes = [0] * numnodes
-    fill = secnodefirst[:-1]
-    for k in reversed(range(numnodes)):
-        secnodes[fill[nodesector[k]]] = k
-        fill[nodesector[k]] += 1
-
-    header = struct.pack("<4H", numthings, level.numsectors, level.numblocks, numnodes)
+    header = struct.pack("<4H", numthings, level.numsectors, level.numblocks, 0)
     header += struct.pack("<6H", *(c[1] for c in counts), *(c[0] for c in counts))
-    arrays = [b"".join(entries)] + [
-        shorts(a)
-        for a in (sectorfirst, blockfirst, ordered, nodefirst, nodesector, nodething, secnodefirst, secnodes, *thinking)
-    ]
+    arrays = [b"".join(entries)] + [shorts(a) for a in (sectorfirst, blockfirst, ordered, *thinking)]
     return pack_arrays(header, arrays)
 
 

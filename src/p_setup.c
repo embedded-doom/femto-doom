@@ -91,7 +91,6 @@ mover_t * _g_movers;
 uint8_t * _g_secbits;
 int16_t         _g_secbytes;
 zref_t  * _g_secthings;
-zref_t  * _g_sectouching;
 zref_t          _g_soundtarget;
 static int16_t nummovers;
 const mapsidedef_t *_g_mapsides;
@@ -196,8 +195,7 @@ static void P_LoadSectors (int16_t lump)
   _g_sectors = Z_CallocLevel(_g_numsectors * sizeof(sector_t));
   _g_secbytes = (_g_numsectors + 7) / 8;
   _g_secbits = Z_CallocLevel(SB_PLANES * _g_secbytes);
-  _g_secthings = Z_CallocLevel(2 * SECBUCKETS * sizeof(*_g_secthings));
-  _g_sectouching = _g_secthings + SECBUCKETS;
+  _g_secthings = Z_CallocLevel(SECBUCKETS * sizeof(*_g_secthings));
   _g_soundtarget = 0;
   _g_movers = NULL;
   nummovers = 0;

@@ -236,7 +236,7 @@ extern const byte* _g_rejectmatrix;
 extern mobjext_t*   _g_thingPool;
 extern int16_t _g_thingPoolSize;
 
-// Resting things removed this tic, linked through touching_sectorlist, to free once nothing
+// Resting things removed this tic, linked through removednext, to free once nothing
 // walks past them any more.
 extern zref_t _g_removedrests;
 

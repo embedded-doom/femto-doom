@@ -492,23 +492,6 @@ static void P_XYMovement(mobj_t* mo)
     }
     else
     {
-        /* phares 3/17/98
-       *
-       * Friction will have been adjusted by friction thinkers for
-       * icy or muddy floors. Otherwise it was never touched and
-       * remained set at ORIG_FRICTION
-       *
-       * killough 8/28/98: removed inefficient thinker algorithm,
-       * instead using touching_sectorlist in P_GetFriction() to
-       * determine friction (and thus only when it is needed).
-       *
-       * killough 10/98: changed to work with new bobbing method.
-       * Reducing player momentum is no longer needed to reduce
-       * bobbing, so ice works much better now.
-       *
-       * cph - DEMOSYNC - need old code for Boom demos?
-       */
-
         P_Ext(mo)->momx = FixedMul32OrigFriction(P_Ext(mo)->momx);
         P_Ext(mo)->momy = FixedMul32OrigFriction(P_Ext(mo)->momy);
 
@@ -736,8 +719,6 @@ static void P_SettleCorpse(mobjext_t* ext)
                 P_Mobj(old->bnext)->bprev = Z_Ref(&at->bnext);
         }
     }
-    for (msecnode_t* n = P_Node(old->touching_sectorlist); n; n = P_Node(n->m_tnext))
-        n->m_thing = to;
     P_MoveLoadRef(ext->loadthing, at);
 
     for (thinker_t* th = P_NextThinker(NULL); th; th = P_NextThinker(th))
@@ -851,7 +832,7 @@ void P_RunStatics(void)
     while (_g_removedrests)
     {
         restmobj_t* rest = Z_Ptr(_g_removedrests);
-        _g_removedrests = rest->touching_sectorlist;
+        _g_removedrests = rest->removednext;
         Z_Free(rest);
     }
 
@@ -871,7 +852,6 @@ static void P_RestLinks(const restmobj_t* rest, zref_t* links)
     links[1] = rest->sprev;
     links[2] = rest->bnext;
     links[3] = rest->bprev;
-    links[4] = rest->touching_sectorlist;
 }
 
 // What P_SpawnMobj and P_KillMobj make of an item a monster drops, kept as a resting thing.
@@ -895,7 +875,6 @@ void P_SpawnDrop(fixed_t x, fixed_t y, mobjtype_t type)
     rest->bits      = 0;
     rest->bnext     = mobj.bnext;
     rest->bprev     = mobj.bprev;
-    rest->touching_sectorlist = mobj.touching_sectorlist;
     rest->floorz    = mobj.floorz;
 }
 
@@ -964,7 +943,6 @@ static restmobj_t* P_RestCorpse(const mobj_t* mobj, zref_t ref)
     rest->bits      = bits;
     rest->bnext     = mobj->bnext;
     rest->bprev     = mobj->bprev;
-    rest->touching_sectorlist = mobj->touching_sectorlist;
     rest->floorz    = mobj->floorz;
     return rest;
 }
@@ -989,7 +967,6 @@ void P_RestMobj(restmobj_t* rest, restvisit_t* visit)
     mobj->bprev     = rest->bprev;
     mobj->z         = P_FromQuarters(rest->floorz);
     mobj->flags     = flags;
-    mobj->touching_sectorlist = rest->touching_sectorlist;
     mobj->floorz    = rest->floorz;
     mobj->state     = state;
     mobj->frame     = st->frame;
@@ -1003,7 +980,7 @@ void P_RestVisited(restvisit_t* visit)
 {
     restmobj_t* rest = visit->rest;
     const mobj_t* mobj = &visit->mo;
-    zref_t links[5];
+    zref_t links[4];
     uint32_t flags;
     int16_t state;
     P_RestLinks(rest, links);
@@ -1016,7 +993,7 @@ void P_RestVisited(restvisit_t* visit)
     rest->floorz = mobj->floorz;
     if (mobj->flags & MF_REMOVED)
     {
-        rest->touching_sectorlist = _g_removedrests;
+        rest->removednext = _g_removedrests;
         _g_removedrests = Z_Ref(rest);
     }
 }
@@ -1045,7 +1022,6 @@ void P_EffectMobj(const effectmobj_t* effect, mobj_t* mobj)
     mobj->sprite    = states[state].sprite;
     mobj->z         = effect->z;
     mobj->flags     = mobjinfo[mobj->type].flags;
-    mobj->touching_sectorlist = effect->touching_sectorlist;
     mobj->floorz    = effect->floorz;
     mobj->ceilingz  = effect->ceilingz;
     mobj->state     = state;
@@ -1089,7 +1065,6 @@ void P_EndEffect(effectvisit_t* visit)
     effect->type      = mobj->type | FORM_EFFECT;
     effect->tics      = mobj->tics;
     effect->z         = mobj->z;
-    effect->touching_sectorlist = mobj->touching_sectorlist;
     effect->floorz    = mobj->floorz;
     effect->ceilingz  = mobj->ceilingz;
     effect->state     = mobj->state;
@@ -1114,7 +1089,7 @@ void P_EffectThinker(thinker_t* th)
 {
     effectmobj_t* effect = P_EffectOfThinker(th);
     effectvisit_t visit;
-    const zref_t links[3] = { effect->snext, effect->sprev, effect->touching_sectorlist };
+    const zref_t links[2] = { effect->snext, effect->sprev };
     memset(&visit.ext, 0, sizeof(visit.ext));
     P_EffectMobj(effect, &visit.ext.mo);
     visit.ext.thinker.function = TH_MOBJ;
@@ -1124,7 +1099,7 @@ void P_EffectThinker(thinker_t* th)
     P_MobjThinker(&visit.ext.thinker);
 
     const boolean removed = visit.ext.thinker.function == TH_REMOVETHING;
-    if (links[0] != effect->snext || links[1] != effect->sprev || links[2] != effect->touching_sectorlist
+    if (links[0] != effect->snext || links[1] != effect->sprev
         || (!removed && visit.ext.thinker.function != TH_MOBJ) || visit.ext.mo.x != effect->x
         || visit.ext.mo.y != effect->y || visit.ext.mo.floorz != effect->floorz || visit.ext.mo.ceilingz != effect->ceilingz)
         I_Error("P_EffectThinker: %i moved", visit.ext.mo.type);
@@ -1223,7 +1198,6 @@ static void P_InitMobj(mobj_t* mobj, fixed_t x, fixed_t y, fixed_t z, mobjtype_t
     mobj->tics   = st->tics;
     mobj->sprite = st->sprite;
     mobj->frame  = st->frame;
-    mobj->touching_sectorlist = 0; // NULL head of sector list // phares 3/13/98
 
     // set subsector and/or block links
 
@@ -1259,11 +1233,7 @@ mobj_t* P_SpawnMobj(fixed_t x,fixed_t y,fixed_t z,mobjtype_t type)
 
 void P_RemoveMobj(mobj_t* mobj)
 {
-  P_KillLoadNodes(mobj);
   P_UnsetThingPosition (mobj);
-
-  // Delete all nodes on the current sector_list               phares 3/16/98
-  P_DelSeclist();
 
   // stop any playing sound
 

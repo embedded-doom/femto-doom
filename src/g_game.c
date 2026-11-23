@@ -281,14 +281,6 @@ static void G_DoLoadLevel (void)
         _g_player.playerstate = PST_REBORN;
 
 
-    // initialize the msecnode_t freelist.                     phares 3/25/98
-    // any nodes in the freelist are gone by now, cleared
-    // by Z_FreeTags() when the previous level ended or player
-    // died.
-
-    P_SetSecnodeFirstpoolToNull();
-
-
     P_SetupLevel (_g_gamemap);
 
     _g_gameaction = ga_nothing;

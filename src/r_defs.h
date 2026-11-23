@@ -91,7 +91,7 @@ typedef char assertDegenmobjSize[sizeof(degenmobj_t) == 8 ? 1 : -1];
 //
 
 // Its lines are in the map WAD's E1MxGL; P_SectorSoundOrg finds its sound origin.
-// Its things and touching nodes are in chains shared by SECBUCKETS sectors, and the
+// Its things are in chains shared by SECBUCKETS sectors, and the
 // sound target is _g_soundtarget for every sector with SB_HEARD.
 typedef struct
 {
@@ -117,9 +117,7 @@ uint8_t P_FlatByte(int16_t pic);
 
 #define SECBUCKETS 16
 extern zref_t* _g_secthings;    // mobj_t chains by sector index, SECBUCKETS of them
-extern zref_t* _g_sectouching;  // msecnode_t chains by sector index
 #define SEC_THINGS(s)   (_g_secthings[((s) - _g_sectors) & (SECBUCKETS - 1)])
-#define SEC_TOUCHING(s) (_g_sectouching[((s) - _g_sectors) & (SECBUCKETS - 1)])
 
 extern zref_t _g_soundtarget;
 
@@ -294,45 +292,6 @@ sector_t* LN_BackSector(const line_t* l);
 #define SEC_ADJACENTFIRST(s) W_FetchUInt16(&_g_secadjacentfirst[(s) - _g_sectors])
 #define SEC_ADJACENT(i) W_FetchUInt16(&_g_secadjacent[i])
 
-
-// phares 3/14/98
-//
-// Sector list node showing all sectors an object appears in.
-//
-// There are two threads that flow through these nodes. The first thread
-// starts at touching_thinglist in a sector_t and flows through the m_snext
-// links to find all mobjs that are entirely or partially in the sector.
-// The second thread starts at touching_sectorlist in an mobj_t and flows
-// through the m_tnext links to find all sectors a thing touches. This is
-// useful when applying friction or push effects to sectors. These effects
-// can be done as thinkers that act upon all objects touching their sectors.
-// As an mobj moves through the world, these nodes are created and
-// destroyed, with the links changed appropriately.
-//
-// For the links, NULL means top or end of list.
-
-typedef struct msecnode_s
-{
-  zref_t m_sector; // a sector_t containing this object
-  zref_t m_thing;  // this mobj_t
-  zref_t m_tprev;  // prev msecnode_t for this thing
-  zref_t m_tnext;  // next msecnode_t for this thing
-  zref_t m_sprev;  // prev msecnode_t for this sector
-  zref_t m_snext;  // next msecnode_t for this sector
-  uint8_t visited; // killough 4/4/98, 4/7/98: used in search algorithms
-} msecnode_t;
-
-typedef char assertMsecnodeSize[sizeof(msecnode_t) == 14 ? 1 : -1];
-
-static inline msecnode_t* P_Node(zref_t ref)
-{
-  return Z_Ptr(ref);
-}
-
-static inline sector_t* P_Sector(zref_t ref)
-{
-  return Z_Ptr(ref);
-}
 
 //
 // The LineSeg.

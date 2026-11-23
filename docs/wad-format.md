@@ -82,18 +82,15 @@ stored once.
 
 ### E1MxTL
 
-The map's things, spawned in advance. Header: thing count, sector count, block count, link
-count; then per skill group (easy, normal, hard) the number of things that never think, then per
-skill group the number that do (u16 each); then twelve u32 offsets of:
+The map's things, spawned in advance. Header: thing count, sector count, block count, a zero;
+then per skill group (easy, normal, hard) the number of things that never think, then per skill
+group the number that do (u16 each); then seven u32 offsets of:
 
 | Array | Content |
 |---|---|
 | things | 14 B: x, y, thing type (u8, 0xFF for none), angle / 45 (u8, bit 7 for ambush), per skill group the thing's slot among those that think or among those that never do (-1 if absent), subsector |
 | sector first, block first | where each sector's, then each block's things start in the list below, and the end |
 | things by sector and block | thing numbers, in each run the last loaded first |
-| link first | where each thing's links start in the next two arrays |
-| link sector, link thing | per link a sector a thing touches, and that thing |
-| sector link first, sector links | per sector its links, the last loaded first |
 | slot things | per skill group the thing in each slot among those that think |
 
 ### E1MxGL

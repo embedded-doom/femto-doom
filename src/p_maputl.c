@@ -241,8 +241,7 @@ void P_LineOpening(const line_t* linedef)
 // Things the map spawns are not chained while they stay where the map put them: the chains
 // then hold only what was linked since. The map WAD's E1MxTL lists, per sector and block,
 // the map things in reverse load order, as the chains would have them after their later
-// links, and the sectors each thing touched after loading. Memory keeps a bit per thing and
-// per touch. A map static never moves and is never shot, so its state follows from its first
+// links. Memory keeps a bit per thing. A map static never moves and is never shot, so its state follows from its first
 // tics and the time since loading, and its heights are its sector's until a moving sector
 // changes them; the mobj_t code sees is rebuilt whenever it is visited.
 //
@@ -260,11 +259,13 @@ typedef char assertLoadthingSize[sizeof(loadthing_t) == 14 ? 1 : -1];
 
 typedef struct
 {
-  uint16_t numthings, numsectors, numblocks, numnodes;
+  uint16_t numthings, numsectors, numblocks, unused;
   uint16_t numstatics[3], numthinking[3];
-  uint32_t things, sectorfirst, blockfirst, list, nodefirst, nodesector, nodething, secnodefirst, secnodes;
+  uint32_t things, sectorfirst, blockfirst, list;
   uint32_t slotthing[3];
 } loadheader_t;
+
+typedef char assertLoadheaderSize[sizeof(loadheader_t) == 48 ? 1 : -1];
 
 #define STATICZCHUNK 4
 
@@ -280,14 +281,12 @@ static const loadthing_t* tlthings;
 static const int16_t* tlsectorfirst;
 static const int16_t* tlblockfirst;
 static const int16_t* tllist;
-static const int16_t* tlnodefirst;
-static const int16_t* tlnodesector;
 static const int16_t* tlslotthing;
 
 static boolean loadingthings;
 static int16_t loadingthing;
 static int16_t skillgroup;
-static int16_t numloadthings, numloadnodes, numloadstatics;
+static int16_t numloadthings, numloadstatics;
 static uint16_t numloadsectors, numloadblocks;
 static zref_t* loadrefs;
 static int16_t numthinking;
@@ -300,7 +299,6 @@ static uint32_t staticclock;
 static int16_t changesector = -1;
 static fixed_t changefloor, changeceiling;
 static uint8_t* inplace;
-static uint8_t* nodealive;
 static uint8_t* changed;
 
 #define BIT(bits, i)    ((bits)[(i) >> 3] & (1 << ((i) & 7)))
@@ -322,8 +320,6 @@ void P_BeginLoadThings(int16_t map)
   tlsectorfirst  = (const int16_t*)(tl + h.sectorfirst);
   tlblockfirst   = (const int16_t*)(tl + h.blockfirst);
   tllist         = (const int16_t*)(tl + h.list);
-  tlnodefirst    = (const int16_t*)(tl + h.nodefirst);
-  tlnodesector   = (const int16_t*)(tl + h.nodesector);
 
   if (_g_gameskill == sk_baby || _g_gameskill == sk_easy)
     skillgroup = 0;
@@ -333,7 +329,6 @@ void P_BeginLoadThings(int16_t map)
     skillgroup = 1;
 
   numloadthings  = h.numthings;
-  numloadnodes   = h.numnodes;
   numloadsectors = h.numsectors;
   numloadblocks  = h.numblocks;
   numloadstatics = h.numstatics[skillgroup];
@@ -347,7 +342,6 @@ void P_BeginLoadThings(int16_t map)
   numstaticz  = 0;
   staticclock = 0;
   inplace     = Z_CallocLevel((numloadthings + 7) / 8);
-  nodealive   = Z_CallocLevel((numloadnodes + 7) / 8);
   changed     = Z_CallocLevel((numloadthings + 7) / 8);
   loadingthings = true;
 }
@@ -383,13 +377,6 @@ static void P_PlaceLoadThing(mobj_t* thing)
   {
     P_Ext(thing)->loadthing = t + 1;
     loadrefs[P_LoadSlot(t)] = Z_Ref(thing);
-  }
-  if (!(thing->flags & MF_NOSECTOR))
-  {
-    const int16_t last = W_FetchInt16(&tlnodefirst[t + 1]);
-    for (int16_t k = W_FetchInt16(&tlnodefirst[t]); k < last; k++)
-      SETBIT(nodealive, k);
-    P_MarkSecNodeLines(thing);
   }
 }
 
@@ -806,17 +793,6 @@ static boolean P_TraverseSleeper(intercept_t* in, traverser_t func)
   return r;
 }
 
-int16_t P_LoadIndex(mobj_t* thing)
-{
-  if (loadingthings)
-    return -1;
-  if (thing->flags & MF_STATIC)
-    return thing->flags & MF_INPLACE ? (int16_t)thing->sprev : -1;
-  if (thing->flags & MF_RESPAWNED)
-    return -1;
-  return P_Ext(thing)->loadthing - 1;
-}
-
 // Where map thing t spawns, which P_NightmareRespawn returns its monster to.
 void P_LoadThingSpot(int16_t t, fixed_t* x, fixed_t* y, angle_t* angle, boolean* ambush)
 {
@@ -826,37 +802,6 @@ void P_LoadThingSpot(int16_t t, fixed_t* x, fixed_t* y, angle_t* angle, boolean*
   *y      = (fixed_t)lt.y << FRACBITS;
   *angle  = ANG45 * (lt.angle & 0x7f);
   *ambush = (lt.angle & 0x80) != 0;
-}
-
-int16_t P_LoadNodeFirst(int16_t i)
-{
-  return W_FetchInt16(&tlnodefirst[i]);
-}
-
-boolean P_LoadNodeAlive(int16_t k)
-{
-  return BIT(nodealive, k) != 0;
-}
-
-int16_t P_LoadNodeSector(int16_t k)
-{
-  return W_FetchInt16(&tlnodesector[k]);
-}
-
-void P_KillLoadNode(int16_t k)
-{
-  CLRBIT(nodealive, k);
-}
-
-void P_KillLoadNodes(mobj_t* thing)
-{
-  int16_t i = P_LoadIndex(thing);
-  if (i >= 0)
-  {
-    const int16_t last = W_FetchInt16(&tlnodefirst[i + 1]);
-    for (int16_t k = W_FetchInt16(&tlnodefirst[i]); k < last; k++)
-      CLRBIT(nodealive, k);
-  }
 }
 
 void P_BeginLoadChange(int16_t sector, fixed_t oldfloor, fixed_t oldceiling)
@@ -912,11 +857,6 @@ void P_UnsetThingPosition(mobj_t* thing)
     {
       CLRBIT(inplace, thing->sprev);
       thing->flags &= ~MF_INPLACE;
-      if (!(thing->flags & MF_NOSECTOR))
-        {
-          P_SetSeclist(P_Node(thing->touching_sectorlist));
-          thing->touching_sectorlist = 0;
-        }
       return;
     }
 
@@ -933,22 +873,6 @@ void P_UnsetThingPosition(mobj_t* thing)
       zref_t snext = thing->snext;
       if ((*sprev = snext))  // unlink from sector list
         P_Mobj(snext)->sprev = thing->sprev;
-
-        // phares 3/14/98
-        //
-        // Save the sector list pointed to by touching_sectorlist.
-        // In P_SetThingPosition, we'll keep any nodes that represent
-        // sectors the Thing still touches. We'll add new ones then, and
-        // delete any nodes for sectors the Thing has vacated. Then we'll
-        // put it back into touching_sectorlist. It's done this way to
-        // avoid a lot of deleting/creating for nodes, when most of the
-        // time you just get back what you deleted anyway.
-        //
-        // If this Thing is being removed entirely, then the calling
-        // routine will clear out the nodes in sector_list.
-
-      P_SetSeclist(P_Node(thing->touching_sectorlist));
-      thing->touching_sectorlist = 0; //to be restored by P_SetThingPosition
     }
 
   if (!(thing->flags & MF_NOBLOCKMAP))
@@ -1006,21 +930,6 @@ void P_SetThingPositionAs(mobj_t* thing, void* at)
         P_Mobj(snext)->sprev = Z_Ref(&((mobj_t*)at)->snext);
       thing->sprev = Z_Ref(link);
       *link = Z_Ref(at);
-
-      // phares 3/16/98
-      //
-      // If sector_list isn't NULL, it has a collection of sector
-      // nodes that were just removed from this Thing.
-
-      // Collect the sectors the object will live in by looking at
-      // the existing sector_list and adding new nodes and deleting
-      // obsolete ones.
-
-      // When a node is deleted, its sector links (the links starting
-      // at sector_t->touching_thinglist) are broken. When a node is
-      // added, new sector links are created.
-
-      P_CreateSecNodeList(thing, Z_Ref(at));
     }
 
   // link into blockmap

@@ -175,10 +175,6 @@ typedef struct mobj_s
 
     uint32_t            flags;
 
-                                       // phares 3/17/98
-    // a linked list of sectors where this object appears
-    zref_t              touching_sectorlist;    // msecnode_t
-
     // The closest interval over all contacted Sectors, in quarter units as sector heights are.
     int16_t             floorz;
     int16_t             ceilingz;
@@ -252,7 +248,7 @@ typedef struct
     uint8_t             bits;   // REST_*
     zref_t              bnext;
     zref_t              bprev;
-    zref_t              touching_sectorlist;
+    zref_t              removednext;    // in _g_removedrests
     int16_t             floorz;
 } restmobj_t;
 
@@ -279,7 +275,6 @@ typedef struct
     mobjtype_t          type;   // with FORM_EFFECT
     int8_t              tics;
     fixed_t             z;
-    zref_t              touching_sectorlist;
     int16_t             floorz;
     int16_t             ceilingz;
     int16_t             state;
@@ -298,7 +293,7 @@ typedef struct
 {
     mobj_t              mo;
     restmobj_t*         rest;
-    zref_t              links[5];
+    zref_t              links[4];
 } restvisit_t;
 
 static inline mobj_t* P_Mobj(zref_t ref)
