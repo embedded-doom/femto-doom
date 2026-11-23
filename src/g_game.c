@@ -560,7 +560,13 @@ static void G_DoCompleted (void)
     if (automapmode & am_active)
         AM_Stop();
 
-    if (_g_gamemap == 9) // kilough 2/7/98
+    if (_g_gamemap == 8)
+    {
+        _g_gameaction = ga_victory;
+        return;
+    }
+
+    if (_g_gamemap == 9)
         _g_player.didsecret = true;
 
     _g_wminfo.didsecret = _g_player.didsecret;
@@ -616,9 +622,6 @@ void G_WorldDone (void)
 
     if (secretexit)
         _g_player.didsecret = true;
-
-    if (_g_gamemap == 8)
-        _g_gameaction = ga_victory; // cph - after ExM8 summary screen, show victory stuff
 }
 
 static void G_DoWorldDone (void)
