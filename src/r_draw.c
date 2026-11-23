@@ -413,28 +413,20 @@ fixed_t CONSTFUNC FixedApproxDiv(fixed_t a, fixed_t b)
 
 static PUREFUNC int16_t R_PointOnSide(fixed_t x, fixed_t y, const mapnode_t* node)
 {
-	int16_t ix = x >> FRACBITS;
-
 	if (!node->dx)
-		return ix <= node->x ? node->dy > 0 : node->dy < 0;
-
-	int16_t iy = y >> FRACBITS;
+		return x <= (fixed_t)node->x << FRACBITS ? node->dy > 0 : node->dy < 0;
 
 	if (!node->dy)
-		return iy <= node->y ? node->dx < 0 : node->dx > 0;
+		return y <= (fixed_t)node->y << FRACBITS ? node->dx < 0 : node->dx > 0;
 
 	x -= (fixed_t)node->x << FRACBITS;
 	y -= (fixed_t)node->y << FRACBITS;
 
-	ix = x >> FRACBITS;
-	iy = y >> FRACBITS;
-
 	// Try to quickly decide by looking at sign bits.
-	if ((node->dy ^ node->dx ^ ix ^ iy) < 0)
-		return (node->dy ^ ix) < 0;  // (left is negative)
+	if ((node->dy ^ node->dx ^ x ^ y) < 0)
+		return (node->dy ^ x) < 0;  // (left is negative)
 
-	//return FixedMul(y, node->dx) >= FixedMul(x, node->dy);
-	return (y >> 8) * node->dx >= (x >> 8) * node->dy;
+	return FixedMul(y, node->dx) >= FixedMul(node->dy, x);
 }
 
 //

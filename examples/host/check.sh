@@ -16,7 +16,7 @@ run() {
 	fi
 }
 
-run ed99a19633954a02 -frames 1320
-run 6ee03cbfeb2de6ca -frames 1320 -skill 1
-run b51b905db01bafe3 -demo -frames 3000
+run b74a5fa4c7682d26 -frames 1320
+run da1690d86790f666 -frames 1320 -skill 1
+run b3e4f65c85c4bead -demo -frames 3000
 exit $status
