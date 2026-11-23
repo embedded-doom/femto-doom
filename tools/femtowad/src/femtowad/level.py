@@ -193,18 +193,16 @@ class Level:
 
     @staticmethod
     def point_on_side(x: int, y: int, node: Node) -> int:
-        ix = i16(x >> FRACBITS)
+        """As R_PointOnSide: 0 for the front, 1 for the back."""
         if not node.dx:
-            return int(node.dy > 0) if ix <= node.x else int(node.dy < 0)
-        iy = i16(y >> FRACBITS)
+            return int(node.dy > 0) if x <= node.x << FRACBITS else int(node.dy < 0)
         if not node.dy:
-            return int(node.dx < 0) if iy <= node.y else int(node.dx > 0)
+            return int(node.dx < 0) if y <= node.y << FRACBITS else int(node.dx > 0)
         x = i32(x - (node.x << FRACBITS))
         y = i32(y - (node.y << FRACBITS))
-        ix, iy = i16(x >> FRACBITS), i16(y >> FRACBITS)
-        if (node.dy ^ node.dx ^ ix ^ iy) < 0:
-            return int((node.dy ^ ix) < 0)
-        return int(i32((y >> 8) * node.dx) >= i32((x >> 8) * node.dy))
+        if (node.dy ^ node.dx ^ x ^ y) < 0:
+            return int((node.dy ^ x) < 0)
+        return int(i32((y * node.dx) >> FRACBITS) >= i32((node.dy * x) >> FRACBITS))
 
     def point_subsector(self, x: int, y: int) -> int:
         if not self.nodes:
