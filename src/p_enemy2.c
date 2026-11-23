@@ -158,6 +158,12 @@ static boolean P_LookForPlayers(mobj_t* actor, boolean allaround)
 
     player = &_g_player;
 
+    if (actor->flags & MF_LOOKLATE)
+    {
+        actor->flags &= ~MF_LOOKLATE;
+        return false;
+    }
+
     if (player->health <= 0)
         return false;               // dead
 

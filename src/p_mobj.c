@@ -953,7 +953,7 @@ static restmobj_t* P_RestCorpse(const mobj_t* mobj, zref_t ref)
 {
     const mobjinfo_t* info = &mobjinfo[mobj->type];
     uint8_t bits;
-    if ((mobj->flags & ~(MF_POOLED | MF_AMBUSH | MF_JUSTHIT | MF_JUSTATTACKED)) != P_CorpseFlags(info))
+    if ((mobj->flags & ~(MF_POOLED | MF_AMBUSH | MF_JUSTHIT | MF_JUSTATTACKED | MF_LOOKLATE)) != P_CorpseFlags(info))
         return NULL;
     if (mobj->state == S_GIBS)
         bits = REST_CORPSE | REST_GIBS;
@@ -1228,7 +1228,8 @@ static void P_InitMobj(mobj_t* mobj, fixed_t x, fixed_t y, fixed_t z, mobjtype_t
             ext->reactiontime = info->reactiontime;
     }
 
-    P_Random(); // only to call random for compatibiltiy
+    if (P_Random() % 4 == 1 && (info->flags & MF_COUNTKILL))
+        mobj->flags |= MF_LOOKLATE;
     // do not set the state with P_SetMobjState,
     // because action routines can not be called yet
 

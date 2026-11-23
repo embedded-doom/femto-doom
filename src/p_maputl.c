@@ -625,8 +625,8 @@ static void P_SleeperMobj(int16_t slot, uint8_t rec, mobjext_t* ext)
   mobj->sprev     = t;
   mobj->subsector = lt.subsector;
   P_LoadThingHeights(t, lt.subsector, mobj);
-  mobj->flags     = info->flags | pooled | MF_INPLACE | (lt.angle & 0x80 ? MF_AMBUSH : 0);
-  mobj->state     = info->spawnstate + (rec >> 4);
+  mobj->flags     = info->flags | pooled | MF_INPLACE | (lt.angle & 0x80 ? MF_AMBUSH : 0) | (rec & 0x80 ? MF_LOOKLATE : 0);
+  mobj->state     = info->spawnstate + ((rec >> 4) & 7);
   mobj->tics      = rec & 15;
   mobj->sprite    = states[mobj->state].sprite;
   mobj->frame     = states[mobj->state].frame;
@@ -644,9 +644,9 @@ static boolean P_SleepForm(int16_t slot, const mobjext_t* ext, uint8_t* rec)
       || _g_linetarget == mobj)
     return false;
   const int16_t offset = mobj->state - mobjinfo[mobj->type].spawnstate;
-  if (offset < 0 || offset > 15 || mobj->tics < 1 || mobj->tics > 15)
+  if (offset < 0 || offset > 7 || mobj->tics < 1 || mobj->tics > 15)
     return false;
-  *rec = offset << 4 | mobj->tics;
+  *rec = (mobj->flags & MF_LOOKLATE ? 0x80 : 0) | offset << 4 | mobj->tics;
   mobjext_t form;
   form.mo.flags = mobj->flags & MF_POOLED;
   P_SleeperMobj(slot, *rec, &form);
