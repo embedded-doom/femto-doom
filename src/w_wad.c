@@ -49,8 +49,7 @@
 typedef struct
 {
 	int32_t  filepos;
-	uint16_t size;
-	int16_t  filler;
+	int32_t  size;
 	char name[8];
 } filelump_t;
 
@@ -88,9 +87,9 @@ void W_Init(void)
 }
 
 
-uint16_t PUREFUNC W_LumpLength(int16_t num)
+int32_t PUREFUNC W_LumpLength(int16_t num)
 {
-	return W_FetchUInt16(&fileinfo[num].size);
+	return W_FetchInt32(&fileinfo[num].size);
 }
 
 

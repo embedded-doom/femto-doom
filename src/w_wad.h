@@ -46,7 +46,7 @@
 void W_Init(void);
 
 int16_t           PUREFUNC W_GetNumForName(const char *name);
-uint16_t          PUREFUNC W_LumpLength(   int16_t num);
+int32_t           PUREFUNC W_LumpLength(   int16_t num);
 const void* PUREFUNC W_GetLumpByNum( int16_t num);
 
 int16_t           PUREFUNC W_GetMapNumForName(const char *name);
