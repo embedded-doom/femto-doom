@@ -433,15 +433,12 @@ static void P_XYMovement(mobj_t* mo)
 
                         if(ceilingBackSector && SEC_CEILINGSKY(ceilingBackSector))
                         {
-                            if (mo->z > SEC_CEILINGHEIGHT(ceilingBackSector))
-                            {
-                                // Hack to prevent missiles exploding
-                                // against the sky.
-                                // Does not handle sky floors.
+                            // Hack to prevent missiles exploding
+                            // against the sky.
+                            // Does not handle sky floors.
 
-                                P_RemoveMobj (mo);
-                                return;
-                            }
+                            P_RemoveMobj (mo);
+                            return;
                         }
                     }
 
