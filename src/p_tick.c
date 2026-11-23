@@ -99,6 +99,10 @@ void P_AddThinker(thinker_t* thinker)
   thinker->next = THINKER_HEAD;
   thinker->prev = _g_thinkerclasscap.prev;
   _g_thinkerclasscap.prev = ref;
+
+  // As in Doom, a thinker added at the end still runs in this tic.
+  if (_g_runnext == &_g_thinkerclasscap)
+    _g_runnext = thinker;
 }
 
 void P_UnlinkThinker(thinker_t* thinker)
