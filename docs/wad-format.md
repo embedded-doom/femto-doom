@@ -14,8 +14,7 @@ directory, the table of every lump's name, offset and size. The platform passes 
 `W_SetWads` as addresses, e.g. in flash, and the engine finds a lump by looking its name up in
 the directory.
 
-The engine reads lump counts and sizes as 16 bits, so lumps of 64 KiB or more are only read
-piecewise. Lumps with the same data share it.
+The engine reads lump counts as 16 bits and sizes as 32 bits. Lumps with the same data share it.
 
 Every lump starts at a multiple of 32 bytes, so a record of 32 bytes or a smaller power of two
 never spans two cache lines of that size. The platform places both WADs at such a multiple, too.
