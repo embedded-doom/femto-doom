@@ -15,7 +15,8 @@
  * DESCRIPTION:
  *      A headless platform: the screen in memory, scripted input and a
  *      simulated clock. Prints a hash of every frame shown and can save one
- *      frame as a PPM picture.
+ *      frame as a PPM picture. Plays a demo file and writes the statistics of
+ *      the levels it completes, as statdump does.
  *
  *-----------------------------------------------------------------------------*/
 
@@ -24,6 +25,7 @@
 #include <string.h>
 
 #include "i_platform.h"
+#include "statdump.h"
 
 #if !defined TEXTURE_SHIFT
 #define TEXTURE_SHIFT 0
@@ -47,6 +49,7 @@ static uint32_t now_ms;
 static uint32_t start_ms;
 
 static uint32_t zone_size = 262144;
+static const char* statdump_file;
 
 static struct
 {
@@ -111,6 +114,9 @@ void I_StartTic(void)
 
 void I_Quit(void)
 {
+	Stat_Capture();
+	if (statdump_file)
+		Stat_Dump(statdump_file);
 	exit(0);
 }
 
@@ -436,7 +442,7 @@ static void save_ppm(const char* path, const uint8_t* pal)
 }
 
 
-static const uint8_t* load(const char* path)
+static const uint8_t* load(const char* path, long* length)
 {
 	FILE* file = fopen(path, "rb");
 	if (!file)
@@ -451,7 +457,52 @@ static const uint8_t* load(const char* path)
 		I_Error("cannot read %s", path);
 
 	fclose(file);
+	if (length)
+		*length = size;
 	return data;
+}
+
+
+static uint32_t word(const uint8_t* p)
+{
+	return p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
+}
+
+
+static void set_word(uint8_t* p, uint32_t v)
+{
+	p[0] = v;
+	p[1] = v >> 8;
+	p[2] = v >> 16;
+	p[3] = v >> 24;
+}
+
+
+// The graphics WAD with its DEMO3 lump replaced by the demo in path.
+static const uint8_t* with_demo(const char* wad_path, const char* path)
+{
+	long wad_size, demo_size;
+	const uint8_t* wad = load(wad_path, &wad_size);
+	const uint8_t* demo = load(path, &demo_size);
+	const long at = (wad_size + 31) & ~31L;
+	uint8_t* copy = calloc(at + demo_size, 1);
+	if (!copy)
+		I_Error("no memory for %s", path);
+	memcpy(copy, wad, wad_size);
+	memcpy(copy + at, demo, demo_size);
+
+	for (uint32_t i = 0; i < word(copy + 4); i++)
+	{
+		uint8_t* entry = copy + word(copy + 8) + 16 * i;
+		if (!strncmp((const char*)entry + 8, "DEMO3", 8))
+		{
+			set_word(entry, at);
+			set_word(entry + 4, demo_size);
+			return copy;
+		}
+	}
+	I_Error("%s has no DEMO3", wad_path);
+	return NULL;
 }
 
 
@@ -497,7 +548,8 @@ static void usage(void)
 {
 	fprintf(stderr,
 		"usage: host GRAPHICS.WAD MAPS.WAD [-frames N] [-skill N] [-demo] [-automap]\n"
-		"            [-zone BYTES] [-shot FRAME FILE.ppm]\n");
+		"            [-zone BYTES] [-shot FRAME FILE.ppm] [-playdemo FILE.lmp]\n"
+		"            [-statdump FILE]\n");
 	exit(2);
 }
 
@@ -510,6 +562,7 @@ int main(int argc, char** argv)
 	boolean automap = false;
 	long shot = -1;
 	const char* shot_file = NULL;
+	const char* demo_file = NULL;
 
 	if (argc < 3)
 		usage();
@@ -526,6 +579,14 @@ int main(int argc, char** argv)
 			automap = true;
 		else if (!strcmp(argv[i], "-zone") && i + 1 < argc)
 			zone_size = strtoul(argv[++i], NULL, 10);
+		else if (!strcmp(argv[i], "-playdemo") && i + 1 < argc)
+		{
+			demo_file = argv[++i];
+			demo = true;
+			frames = UINT32_MAX;
+		}
+		else if (!strcmp(argv[i], "-statdump") && i + 1 < argc)
+			statdump_file = argv[++i];
 		else if (!strcmp(argv[i], "-shot") && i + 2 < argc)
 		{
 			shot = atol(argv[++i]);
@@ -535,11 +596,11 @@ int main(int argc, char** argv)
 			usage();
 	}
 
-	const char* const engine_argv[] = {"femto-doom"};
+	const char* const engine_argv[] = {"femto-doom", "-timedemo", "demo3"};
 
 	start_ms = clock_ms();
-	W_SetWads(load(argv[1]), load(argv[2]));
-	D_DoomInit(1, engine_argv);
+	W_SetWads(demo_file ? with_demo(argv[1], demo_file) : load(argv[1], NULL), load(argv[2], NULL));
+	D_DoomInit(demo_file ? 3 : 1, engine_argv);
 
 	uint64_t hash = 0xcbf29ce484222325ULL;
 	for (uint32_t f = 0; f < frames; f++)
@@ -549,12 +610,15 @@ int main(int argc, char** argv)
 
 		const uint8_t* shown = palette;
 		D_DoomStep();
+		Stat_Capture();
 
 		hash = hash_frame(hash, shown);
 		if ((long)f == shot)
 			save_ppm(shot_file, shown);
 	}
 
+	if (statdump_file)
+		Stat_Dump(statdump_file);
 	printf("frames %lu hash %016llx\n", (unsigned long)frames, (unsigned long long)hash);
 	return 0;
 }
