@@ -75,6 +75,8 @@ boolean P_SetMobjState(mobj_t* mobj, statenum_t state)
         st = &states[state];
         mobj->state = state;
         mobj->tics = st->tics;
+        if (_g_gameskill == sk_nightmare && state >= S_SARG_RUN1 && state <= S_SARG_PAIN2)
+            mobj->tics >>= 1;  // fast demons
         mobj->sprite = st->sprite;
         mobj->frame = st->frame;
 
@@ -1556,13 +1558,18 @@ mobj_t* P_SpawnMissile(mobj_t* source, mobj_t* dest, mobjtype_t type)
     an += (t - P_Random())<<20;
     }
 
+  // Nightmare's imp and baron balls are fast.
+  fixed_t speed = mobjinfo[th->type].speed;
+  if (_g_gameskill == sk_nightmare && (type == MT_TROOPSHOT || type == MT_BRUISERSHOT))
+    speed = 20*FRACUNIT;
+
   th->angle = an;
   an >>= ANGLETOFINESHIFT;
-  P_Ext(th)->momx = FixedMulAngle(mobjinfo[th->type].speed, finecosine(an));
-  P_Ext(th)->momy = FixedMulAngle(mobjinfo[th->type].speed, finesine(  an));
+  P_Ext(th)->momx = FixedMulAngle(speed, finecosine(an));
+  P_Ext(th)->momy = FixedMulAngle(speed, finesine(  an));
 
   dist = P_AproxDistance (dest->x - source->x, dest->y - source->y);
-  dist = dist / mobjinfo[th->type].speed;
+  dist = dist / speed;
 
   if (dist < 1)
     dist = 1;
