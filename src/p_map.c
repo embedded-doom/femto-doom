@@ -517,11 +517,6 @@ boolean P_CheckPosition(mobj_t* thing, fixed_t x, fixed_t y)
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special, whether a walkover type or not.
 //
-// jff 02/12/98 all W1 lines were fixed to check the result from the EV_
-//  function before clearing the special. This avoids losing the function
-//  of the line, should the sector already be active when the line is
-//  crossed. Change is qualified by demo_compatibility.
-//
 // CPhipps - take a line_t pointer instead of a line number, as in MBF
 static void P_CrossSpecialLine(const line_t* line, int16_t side, mobj_t* thing)
 {
@@ -561,7 +556,7 @@ static void P_CrossSpecialLine(const line_t* line, int16_t side, mobj_t* thing)
     return;
 
   // Dispatch on the line special value to the line's action routine
-  // If a once only function, and successful, clear the line special
+  // If a once only function, clear the line special
 
   switch (LN_SPECIAL(line))
   {
@@ -569,32 +564,32 @@ static void P_CrossSpecialLine(const line_t* line, int16_t side, mobj_t* thing)
 
     case 2:
       // Open Door
-      if (EV_DoDoor(line,dopen))
-        LN_CLEARSPECIAL(line);
+      EV_DoDoor(line,dopen);
+      LN_CLEARSPECIAL(line);
       break;
 
     case 5:
       // Raise Floor
-      if (EV_DoFloor(LN_TAG(line),raiseFloor))
-        LN_CLEARSPECIAL(line);
+      EV_DoFloor(LN_TAG(line),raiseFloor);
+      LN_CLEARSPECIAL(line);
       break;
 
     case 8:
       // Build Stairs
-      if (EV_BuildStairs(line))
-        LN_CLEARSPECIAL(line);
+      EV_BuildStairs(line);
+      LN_CLEARSPECIAL(line);
       break;
 
     case 16:
       // Close Door 30
-      if (EV_DoDoor(line,close30ThenOpen))
-        LN_CLEARSPECIAL(line);
+      EV_DoDoor(line,close30ThenOpen);
+      LN_CLEARSPECIAL(line);
       break;
 
     case 22:
       // Raise floor to nearest height and change texture
-      if (EV_DoPlat(line,raiseToNearestAndChange))
-        LN_CLEARSPECIAL(line);
+      EV_DoPlat(line,raiseToNearestAndChange);
+      LN_CLEARSPECIAL(line);
       break;
 
     case 35:
@@ -605,8 +600,8 @@ static void P_CrossSpecialLine(const line_t* line, int16_t side, mobj_t* thing)
 
     case 36:
       // Lower Floor (TURBO)
-      if (EV_DoFloor(LN_TAG(line),turboLower))
-        LN_CLEARSPECIAL(line);
+      EV_DoFloor(LN_TAG(line),turboLower);
+      LN_CLEARSPECIAL(line);
       break;
 
       // Regular walk many retriggerable
