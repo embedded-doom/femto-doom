@@ -597,6 +597,18 @@ static void P_CrossSpecialLine(const line_t* line, int16_t side, mobj_t* thing)
       LN_CLEARSPECIAL(line);
       break;
 
+    case 38:
+      // Lower Floor To Lowest
+      EV_DoFloor(LN_TAG(line),lowerFloorToLowest);
+      LN_CLEARSPECIAL(line);
+      break;
+
+    case 109:
+      // Blazing Door Open
+      EV_DoDoor(line,blazeOpen);
+      LN_CLEARSPECIAL(line);
+      break;
+
       // Regular walk many retriggerable
 
     case 76:

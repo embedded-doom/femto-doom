@@ -109,6 +109,7 @@ enum
   normal,
   close30ThenOpen,
   dopen,
+  blazeOpen,
 };
 
 typedef int8_t vldoor_e;

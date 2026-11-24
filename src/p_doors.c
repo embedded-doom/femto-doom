@@ -207,6 +207,7 @@ void T_VerticalDoor(thinker_t* th)
 
           case close30ThenOpen:  // close and close/open doors are done
           case dopen:
+          case blazeOpen:
             P_Mover(door->sector)->ceilingdata = Z_Ref(0); //jff 2/22/98
             P_RemoveThinker (&door->thinker); // unlink and free
             break;
@@ -275,9 +276,12 @@ boolean EV_DoDoor(const line_t* line, vldoor_e type)
 
       case normal:
       case dopen:
+      case blazeOpen:
         door->direction = 1;
         door->topheight = P_FindLowestCeilingSurrounding(sec);
         door->topheight -= 4*FRACUNIT;
+        if (type == blazeOpen)
+          door->speed = VDOORSPEED * 4;
         if (door->topheight != SEC_CEILINGHEIGHT(sec))
           S_StartSound2(door->sector,sfx_doropn);
         break;
