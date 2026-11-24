@@ -409,9 +409,7 @@ static void WI_updateStats(void)
     cnt_kills = (plrs[0].skills * 100) / wbs->maxkills;
     cnt_items = (plrs[0].sitems * 100) / wbs->maxitems;
 
-    // killough 2/22/98: Make secrets = 100% if maxsecret = 0:
-    cnt_secret = (wbs->maxsecret ?
-      (plrs[0].ssecret * 100) / wbs->maxsecret : 100);
+    cnt_secret = (plrs[0].ssecret * 100) / wbs->maxsecret;
 
     cnt_total_time = wbs->totaltimes / TIC_RATE;
     cnt_time = plrs[0].stime / TIC_RATE;
@@ -455,11 +453,9 @@ static void WI_updateStats(void)
     if (!(bcnt&3))
       S_StartSound(0, sfx_pistol);
 
-    // killough 2/22/98: Make secrets = 100% if maxsecret = 0:
-    if (cnt_secret >= (wbs->maxsecret ? (plrs[0].ssecret * 100) / wbs->maxsecret : 100))
+    if (cnt_secret >= (plrs[0].ssecret * 100) / wbs->maxsecret)
     {
-      cnt_secret = (wbs->maxsecret ?
-        (plrs[0].ssecret * 100) / wbs->maxsecret : 100);
+      cnt_secret = (plrs[0].ssecret * 100) / wbs->maxsecret;
       S_StartSound(0, sfx_barexp);
       sp_state++;
     }
@@ -485,8 +481,10 @@ static void WI_updateStats(void)
     {
       cnt_par = wbs->partime / TIC_RATE;
 
-      if ((cnt_time >= plrs[0].stime / TIC_RATE) && (cnt_total_time >= wbs->totaltimes / TIC_RATE))
+      // As in Doom, the count ends with the level's time; the total only shows.
+      if (cnt_time >= plrs[0].stime / TIC_RATE)
       {
+        cnt_total_time = wbs->totaltimes / TIC_RATE;
         S_StartSound(0, sfx_barexp);
         sp_state++;
       }
@@ -633,6 +631,9 @@ static void WI_initVariables(wbstartstruct_t* wbstartstruct)
 
   if (!wbs->maxitems)
     wbs->maxitems = 1;
+
+  if (!wbs->maxsecret)
+    wbs->maxsecret = 1;
 }
 
 // ====================================================================
