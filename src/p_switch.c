@@ -311,32 +311,27 @@ static void EV_VerticalDoor(const line_t* line, mobj_t* thing)
   // get the sector on the second side of activating linedef
   sec = SIDE_SECTOR(LN_SIDENUM(line, 1));
 
-  door = Z_Ptr(SEC_CEILINGDATA(sec));
-
-  /* If this is a repeatable line, and the door is already moving, then we can just reverse the current action. Note that in prboom 2.3.0 I erroneously removed the if-this-is-repeatable check, hence the prboom_4_compatibility clause below (foolishly assumed that already moving implies repeatable - but it could be moving due to another switch, e.g. lv19-509) */
-  if (door &&
-      (
-       (LN_SPECIAL(line) == 1) || (LN_SPECIAL(line) == 26) || (LN_SPECIAL(line) == 27) || (LN_SPECIAL(line) == 28)
-	  )
-     ) {
-    /* For old demos we have to emulate the old buggy behavior and
-     * mess up non-T_VerticalDoor actions.
-     */
-    if (door->thinker.function == TH_DOOR)
+  // A repeatable door pressed while its sector moves turns that thinker round, as Doom does
+  // through the direction of a door, which is where a plat keeps its wait.
+  thinker_t* th = Z_Ptr(SEC_SPECIALDATA(sec));
+  if (th && (LN_SPECIAL(line) == 1 || LN_SPECIAL(line) == 26 || LN_SPECIAL(line) == 27 || LN_SPECIAL(line) == 28))
+  {
+    if (th->function == TH_DOOR)
     {
-      /* An already moving repeatable door which is being re-pressed, or a
-       * monster is trying to open a closing door - so change direction
-       * DEMOSYNC: we only read door->direction now if it really is a door.
-       */
-      if (door->thinker.function == TH_DOOR && door->direction == -1) {
-        door->direction = 1; /* go back up */
-      } else if (player) {
-        door->direction = -1; /* go back down */
-      }
+      door = (vldoor_t*)th;
+      if (door->direction == -1)
+        door->direction = 1;   // go back up
+      else if (player)
+        door->direction = -1;  // go back down
     }
-    /* Either we're in prboom >=v2.3 and it's not a door, or it's a door but
-     * we're a monster and don't want to shut it; exit with no action.
-     */
+    else if (th->function == TH_PLAT)
+    {
+      plat_t* plat = (plat_t*)th;
+      if (plat->wait == -1)
+        plat->wait = 1;
+      else if (player)
+        plat->wait = -1;
+    }
     return;
   }
 
@@ -346,7 +341,7 @@ static void EV_VerticalDoor(const line_t* line, mobj_t* thing)
   // new door thinker
   door = Z_CallocLevSpec(sizeof(*door));
   P_AddThinker (&door->thinker);
-  P_Mover(sec)->ceilingdata = Z_Ref(door); //jff 2/22/98
+  P_Mover(sec)->specialdata = Z_Ref(door); //jff 2/22/98
   door->thinker.function = TH_DOOR;
   door->sector = sec;
   door->direction = 1;

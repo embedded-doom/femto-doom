@@ -127,21 +127,18 @@ extern zref_t _g_soundtarget;
 #define SEC_CEILINGHEIGHT(s) ((fixed_t)(s)->ceilingheight << (FRACBITS - 2))
 int16_t P_PlaneHeight(fixed_t height);
 
-// A sector gets a mover_t when a floor or ceiling thinker first acts on it.
+// A sector gets a mover_t when a floor or ceiling thinker first acts on it. As in Doom, a
+// sector has one such thinker at a time, whichever plane it moves.
 typedef struct
 {
   int16_t sector;
-
-  // thinker_t for reversable actions
-  zref_t floordata;    // jff 2/22/98 make thinkers on
-  zref_t ceilingdata;  // floors, ceilings, lighting,
+  zref_t specialdata;
 } mover_t;
 
 extern mover_t* _g_movers;
 
 mover_t* P_Mover(sector_t* sector);
-zref_t SEC_FLOORDATA(const sector_t* s);
-zref_t SEC_CEILINGDATA(const sector_t* s);
+zref_t SEC_SPECIALDATA(const sector_t* s);
 
 // A bit per sector in each plane of _g_secbits.
 enum

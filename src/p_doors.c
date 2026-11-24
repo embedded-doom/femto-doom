@@ -155,7 +155,7 @@ void T_VerticalDoor(thinker_t* th)
         {
           // regular open and close doors are all done, remove them
           case normal:
-            P_Mover(door->sector)->ceilingdata = Z_Ref(0); //jff 2/22/98
+            P_Mover(door->sector)->specialdata = Z_Ref(0); //jff 2/22/98
             P_RemoveThinker (&door->thinker);  // unlink and free
             break;
 
@@ -208,7 +208,7 @@ void T_VerticalDoor(thinker_t* th)
           case close30ThenOpen:  // close and close/open doors are done
           case dopen:
           case blazeOpen:
-            P_Mover(door->sector)->ceilingdata = Z_Ref(0); //jff 2/22/98
+            P_Mover(door->sector)->specialdata = Z_Ref(0); //jff 2/22/98
             P_RemoveThinker (&door->thinker); // unlink and free
             break;
 
@@ -249,14 +249,14 @@ boolean EV_DoDoor(const line_t* line, vldoor_e type)
   {
     sec = &_g_sectors[secnum];
     // if the ceiling already moving, don't start the door action
-    if (SEC_CEILINGDATA(sec) != 0)
+    if (SEC_SPECIALDATA(sec) != 0)
         continue;
 
     // new door thinker
     rtn = true;
     door = Z_CallocLevSpec(sizeof(*door));
     P_AddThinker (&door->thinker);
-    P_Mover(sec)->ceilingdata = Z_Ref(door); //jff 2/22/98
+    P_Mover(sec)->specialdata = Z_Ref(door); //jff 2/22/98
 
     door->thinker.function = TH_DOOR;
     door->sector = sec;

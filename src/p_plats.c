@@ -134,7 +134,7 @@ void T_PlatRaise(thinker_t* th)
       break;
 
     case waiting: // plat is waiting
-      if (!--plat->count)  // downcount and check for delay elapsed
+      if (plat->count > 0 && !--plat->count)  // a wait a door press made -1 never ends, as in Doom
       {
         if (SEC_FLOORHEIGHT(plat->sector) == plat->low)
           plat->status = up;     // if at bottom, start up
@@ -174,7 +174,7 @@ boolean EV_DoPlat(const line_t* line, plattype_e type)
     sec = &_g_sectors[secnum];
 
     // don't start a second floor function if already moving
-    if (SEC_FLOORDATA(sec) != 0) // multiple thinkers
+    if (SEC_SPECIALDATA(sec) != 0) // multiple thinkers
       continue;
 
     // Create a thinker
@@ -184,7 +184,7 @@ boolean EV_DoPlat(const line_t* line, plattype_e type)
 
     plat->type = type;
     plat->sector = sec;
-    P_Mover(plat->sector)->floordata = Z_Ref(plat); //jff 2/23/98 multiple thinkers
+    P_Mover(plat->sector)->specialdata = Z_Ref(plat); //jff 2/23/98 multiple thinkers
     plat->thinker.function = TH_PLAT;
     plat->tag = LN_TAG(line);
 
@@ -238,7 +238,7 @@ boolean EV_DoPlat(const line_t* line, plattype_e type)
 //
 static void P_RemovePlat(plat_t* plat)
 {
-  P_Mover(plat->sector)->floordata = Z_Ref(0); //jff 2/23/98 multiple thinkers
+  P_Mover(plat->sector)->specialdata = Z_Ref(0); //jff 2/23/98 multiple thinkers
 
   P_RemoveThinker(&plat->thinker);
 }

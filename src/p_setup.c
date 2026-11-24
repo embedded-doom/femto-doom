@@ -392,16 +392,10 @@ mover_t* P_Mover(sector_t* sector)
   return m;
 }
 
-zref_t SEC_FLOORDATA(const sector_t* s)
+zref_t SEC_SPECIALDATA(const sector_t* s)
 {
   const mover_t* m = P_FindMover(s);
-  return m ? m->floordata : 0;
-}
-
-zref_t SEC_CEILINGDATA(const sector_t* s)
-{
-  const mover_t* m = P_FindMover(s);
-  return m ? m->ceilingdata : 0;
+  return m ? m->specialdata : 0;
 }
 
 int16_t P_PlaneHeight(fixed_t height)
