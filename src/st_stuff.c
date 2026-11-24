@@ -834,7 +834,6 @@ static void ST_doPartialRefresh(void)
 
 static void ST_doRefresh(void)
 {
-#if !defined DISABLE_STATUS_BAR
 #if defined ST_PARTIAL_REFRESH
   if (!st_fullrefresh)
   {
@@ -849,7 +848,6 @@ static void ST_doRefresh(void)
 
   // and refresh all widgets
   ST_drawWidgets();
-#endif
 }
 
 static boolean ST_NeedUpdate(void)
@@ -900,6 +898,9 @@ static boolean ST_NeedUpdate(void)
 
 void ST_Drawer(boolean all)
 {
+#if defined DISABLE_STATUS_BAR
+	return;
+#endif
 #if defined ST_PARTIAL_REFRESH
 	if (all)
 		ST_ForceRefresh();
