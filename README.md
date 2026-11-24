@@ -48,6 +48,18 @@ A platform compiles [src](src) together with its own code; see [platform.md](doc
 - [build.md](docs/build.md): build options
 - [wad-format.md](docs/wad-format.md): the WADs and the tool that builds them
 
+## Example
+
+[host](examples/host) plays femto-doom on a desktop, with SDL2.
+
+```bash
+make -C examples/host
+examples/host/host wads/GRAPHICS.WAD wads/MAPS.WAD
+```
+
+Arrows move and turn, Ctrl fires, Space or Enter uses, `,` and `.` strafe, Space with `,` or `.`
+changes the weapon, Esc opens the menu and Tab the automap.
+
 ## Tests
 
 [run.py](tests/run.py) plays DEMO1 to DEMO3 and the episode 1 demos of

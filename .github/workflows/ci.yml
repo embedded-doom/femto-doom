@@ -74,6 +74,17 @@ jobs:
       - name: statcheck demos
         run: python3 tests/run.py statcheck "$CHOCOLATE" "$DOOM1_WAD" statcheck
 
+  examples:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install SDL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev
+      - name: host
+        run: make -C examples/host CFLAGS="-O2 -Wall -Wextra -Werror"
+
   embedded:
     runs-on: ubuntu-24.04
     env:
