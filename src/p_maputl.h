@@ -70,7 +70,7 @@ typedef struct {
 } intercept_t;
 
 #if !defined MAX_INTERCEPTS
-#define MAX_INTERCEPTS 64
+#define MAX_INTERCEPTS 128
 #endif
 
 // MAX_INTERCEPTS intercepts, sharing memory with the 3D view's, so not while it is drawn.
