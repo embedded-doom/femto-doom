@@ -20,7 +20,7 @@ Defined on the compiler's command line; all are optional.
 |---|---|---|
 | `MAX_DRAWSEGS` | by view size | wall segments per frame |
 | `MAX_OPENINGS` | `VIEW_WINDOW_WIDTH` × 16 | clip range entries per frame |
-| `MAX_INTERCEPTS` | 64 | lines and things one trace can cross |
+| `MAX_INTERCEPTS` | 128 | lines and things one trace can cross |
 | `THING_POOL_RESERVE` | 0 | thing slots kept free at map load |
 | `MIN_FRAGMENT` | 16 | smallest free zone fragment split off a block |
 | `RECIPROCAL_DIV(v)` | `0xffffffff / v` | the division behind reciprocals, e.g. through a divider unit |
