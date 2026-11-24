@@ -820,27 +820,31 @@ void P_EndLoadChange(void)
   changesector = -1;
 }
 
-static boolean P_LoadListThings(const int16_t* first, boolean func(mobj_t*), boolean change)
+boolean P_SectorLoadThings(int16_t sector, boolean func(mobj_t*))
 {
   int16_t range[2];
-  W_Fetch(first, range, sizeof(range));
+  W_Fetch(&tlsectorfirst[sector], range, sizeof(range));
   for (int16_t k = range[0]; k < range[1]; k++)
   {
     int16_t t = W_FetchInt16(&tllist[k]);
-    if (BIT(inplace, t))
-    {
-      if (change)
-        SETBIT(changed, t);
-      if (!P_VisitLoadThing(t, func))
-        return false;
-    }
+    if (BIT(inplace, t) && !P_VisitLoadThing(t, func))
+      return false;
   }
   return true;
 }
 
-boolean P_SectorLoadThings(int16_t sector, boolean func(mobj_t*))
+// The mobj of map thing t, which thinks, if a visit linked it into the blocks; else NULL.
+static mobj_t* P_LinkedLoadThing(int16_t t)
 {
-  return P_LoadListThings(&tlsectorfirst[sector], func, false);
+  loadthing_t lt;
+  W_Fetch(&tlthings[t], &lt, sizeof(lt));
+  const int16_t slot = lt.slot[skillgroup];
+  if (lt.type >= MT_MISC0 || !loadrefs[slot])
+    return NULL;
+  mobj_t* mobj = P_Mobj(loadrefs[slot]);
+  if (P_Form(mobj) || (mobj->flags & (MF_INPLACE | MF_NOBLOCKMAP)) || P_Ext(mobj)->thinker.function == TH_REMOVETHING)
+    return NULL;
+  return mobj;
 }
 
 //
@@ -1005,29 +1009,55 @@ boolean P_BlockLinesIterator(int16_t x, int16_t y, boolean func(const line_t*))
 // moves between unlinking and linking again, so its position tells its block.
 //
 
+// -1 outside the blockmap, where nothing is linked.
 static int16_t P_ThingBlock(const mobj_t* thing)
 {
   int16_t blockx = (thing->x - _g_bmaporgx)>>MAPBLOCKSHIFT;
   int16_t blocky = (thing->y - _g_bmaporgy)>>MAPBLOCKSHIFT;
+  if (blockx < 0 || blockx >= _g_bmapwidth || blocky < 0 || blocky >= _g_bmapheight)
+    return -1;
   return blocky*_g_bmapwidth+blockx;
 }
 
-// A visit may remove the thing and free it.
+// As Doom's, the walk goes on from a thing's link after its visit: a thing the visit moved
+// leads it to the head of its new block and through that, a removed thing to where it was.
 static boolean P_BlockThings(int16_t x, int16_t y, boolean func(mobj_t*), boolean change)
 {
-  if (0 <= x && x < _g_bmapwidth && 0 <= y && y < _g_bmapheight)
+  if (x < 0 || x >= _g_bmapwidth || y < 0 || y >= _g_bmapheight)
+    return true;
+  int16_t b = y*_g_bmapwidth+x;
+  mobj_t* mobj = P_Mobj(_g_blocklinks[b & (BLOCKBUCKETS - 1)]);
+  for (;;)
     {
-    const int16_t b = y*_g_bmapwidth+x;
-    mobj_t* next;
-    for (mobj_t* mobj = P_Mobj(_g_blocklinks[b & (BLOCKBUCKETS - 1)]); mobj; mobj = next)
+    for (; mobj; mobj = P_Mobj(mobj->bnext))
       {
-      next = P_Mobj(mobj->bnext);
-      if (P_ThingBlock(mobj) == b && !(P_Form(mobj) ? P_VisitRest(mobj, func) : func(mobj)))
+      if (P_ThingBlock(mobj) != b)
+        continue;
+      if (!(P_Form(mobj) ? P_VisitRest(mobj, func) : func(mobj)))
         return false;
+      if ((b = P_ThingBlock(mobj)) < 0)
+        return true;
       }
-    return P_LoadListThings(&tlblockfirst[b], func, change);
+
+    int16_t range[2];
+    W_Fetch(&tlblockfirst[b], range, sizeof(range));
+    for (int16_t k = range[0]; k < range[1] && !mobj; k++)
+      {
+      const int16_t t = W_FetchInt16(&tllist[k]);
+      if (!BIT(inplace, t))
+        continue;
+      if (change)
+        SETBIT(changed, t);
+      if (!P_VisitLoadThing(t, func))
+        return false;
+      mobj = P_LinkedLoadThing(t);
+      }
+    if (!mobj)
+      return true;
+    if ((b = P_ThingBlock(mobj)) < 0)
+      return true;
+    mobj = P_Mobj(mobj->bnext);
     }
-  return true;
 }
 
 boolean P_BlockThingsIterator(int16_t x, int16_t y, boolean func(mobj_t*))
