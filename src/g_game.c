@@ -795,7 +795,7 @@ void G_DeferedPlayDemo (const char* name)
 static void CheckForOverrun(const byte* start_p, const byte* current_p, size_t size)
 {
     size_t pos = current_p - start_p;
-    if (pos + size > demolength)
+    if (pos + size > (size_t)demolength)
     {
         I_Error("CheckForOverrun: wrong demo header\n");
     }
