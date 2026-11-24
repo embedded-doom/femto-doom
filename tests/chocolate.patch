@@ -1,0 +1,27 @@
+--- a/src/doom/g_game.c
++++ b/src/doom/g_game.c
+@@ -1024,6 +1024,24 @@
+ 	D_PageTicker (); 
+ 	break;
+     }        
++    {
++        static FILE* tf;
++        static boolean opened;
++        extern int prndindex;
++        if (!opened)
++        {
++            const char* path = getenv("CHOCO_TRACE");
++            opened = true;
++            if (path)
++                tf = fopen(path, "wb");
++        }
++        if (tf && demoplayback && gamestate == GS_LEVEL && players[consoleplayer].mo)
++        {
++            const player_t* p = &players[consoleplayer];
++            fprintf(tf, "T %ld %ld %ld %lu %d %d %d %d\nR %d\n", (long)leveltime, (long)p->mo->x, (long)p->mo->y,
++                    (unsigned long)p->mo->angle, p->health, p->killcount, p->itemcount, p->secretcount, prndindex);
++        }
++    }
+ } 
+  
+  

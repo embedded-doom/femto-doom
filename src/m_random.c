@@ -87,6 +87,11 @@ int16_t M_Random (void)
     return rndtable[++rndindex];
 }
 
+uint8_t P_RandomIndex (void)
+{
+    return prndindex;
+}
+
 void M_ClearRandom (void)
 {
     rndindex = prndindex = 0;

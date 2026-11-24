@@ -47,6 +47,9 @@ int16_t M_Random (void);
 // As M_Random, but used only by the play simulation.
 int16_t P_Random (void);
 
+// Where P_Random is in its table, as Doom's prndindex.
+uint8_t P_RandomIndex (void);
+
 // Fix randoms for demos.
 void M_ClearRandom (void);
 

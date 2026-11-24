@@ -47,7 +47,7 @@
 extern       boolean nosfxparm;
 extern       boolean nomusicparm;
 
-extern const boolean nodrawers;
+extern boolean nodrawers;
 
 // Called by IO functions when input is detected.
 

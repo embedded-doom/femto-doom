@@ -78,7 +78,7 @@ static void D_UpdateFPS(void);
       boolean nosfxparm   = false;
       boolean nomusicparm = false;
 
-const boolean nodrawers = false;
+boolean nodrawers;  // -nodraw
 
 
 static int32_t maketic;
@@ -515,6 +515,8 @@ void D_DoomInit(int argc, const char * const * argv)
 
     V_LoadPalettes();
     V_SetPalette(0);
+
+    nodrawers = M_CheckParm("-nodraw") != 0;
 
     int16_t p = M_CheckParm("-timedemo");
     if (p && p < myargc - 1)

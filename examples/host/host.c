@@ -15,8 +15,7 @@
  * DESCRIPTION:
  *      A headless platform: the screen in memory, scripted input and a
  *      simulated clock. Prints a hash of every frame shown and can save one
- *      frame as a PPM picture. Plays a demo file and writes the statistics of
- *      the levels it completes, as statdump does.
+ *      frame as a PPM picture. Plays a demo file and traces it tic by tic.
  *
  *-----------------------------------------------------------------------------*/
 
@@ -25,7 +24,10 @@
 #include <string.h>
 
 #include "i_platform.h"
-#include "statdump.h"
+#include "doomdef.h"
+#include "d_player.h"
+#include "m_random.h"
+#include "globdata.h"
 
 #if !defined TEXTURE_SHIFT
 #define TEXTURE_SHIFT 0
@@ -49,7 +51,7 @@ static uint32_t now_ms;
 static uint32_t start_ms;
 
 static uint32_t zone_size = 262144;
-static const char* statdump_file;
+static FILE* trace_file;
 
 static struct
 {
@@ -112,11 +114,21 @@ void I_StartTic(void)
 }
 
 
+static uint32_t frames_shown;
+static uint64_t frames_hash = 0xcbf29ce484222325ULL;
+
+
+static void finish(void)
+{
+	if (trace_file)
+		fclose(trace_file);
+	printf("frames %lu hash %016llx\n", (unsigned long)frames_shown, (unsigned long long)frames_hash);
+}
+
+
 void I_Quit(void)
 {
-	Stat_Capture();
-	if (statdump_file)
-		Stat_Dump(statdump_file);
+	finish();
 	exit(0);
 }
 
@@ -544,12 +556,27 @@ static void script(uint32_t f, int skill_down, boolean automap)
 }
 
 
+// Per tic of a demo's levels: level time, player position, angle and health, its kills, items
+// and secrets, then where P_Random is.
+static void trace_tic(void)
+{
+	static int32_t last = -1;
+	if (!trace_file || !_g_demoplayback || _g_gamestate != GS_LEVEL || !_g_player.mo || _g_gametic == last)
+		return;
+	last = _g_gametic;
+	const mobj_t* mo = _g_player.mo;
+	fprintf(trace_file, "T %ld %ld %ld %lu %d %d %d %d\nR %u\n", (long)_g_leveltime, (long)mo->x, (long)mo->y,
+		(unsigned long)mo->angle, _g_player.health, _g_player.killcount, _g_player.itemcount,
+		_g_player.secretcount, P_RandomIndex());
+}
+
+
 static void usage(void)
 {
 	fprintf(stderr,
 		"usage: host GRAPHICS.WAD MAPS.WAD [-frames N] [-skill N] [-demo] [-automap]\n"
 		"            [-zone BYTES] [-shot FRAME FILE.ppm] [-playdemo FILE.lmp]\n"
-		"            [-statdump FILE]\n");
+		"            [-nodraw] [-trace FILE]\n");
 	exit(2);
 }
 
@@ -563,6 +590,7 @@ int main(int argc, char** argv)
 	long shot = -1;
 	const char* shot_file = NULL;
 	const char* demo_file = NULL;
+	boolean nodraw = false;
 
 	if (argc < 3)
 		usage();
@@ -585,8 +613,14 @@ int main(int argc, char** argv)
 			demo = true;
 			frames = UINT32_MAX;
 		}
-		else if (!strcmp(argv[i], "-statdump") && i + 1 < argc)
-			statdump_file = argv[++i];
+		else if (!strcmp(argv[i], "-nodraw"))
+			nodraw = true;
+		else if (!strcmp(argv[i], "-trace") && i + 1 < argc)
+		{
+			trace_file = fopen(argv[++i], "wb");
+			if (!trace_file)
+				I_Error("cannot write %s", argv[i]);
+		}
 		else if (!strcmp(argv[i], "-shot") && i + 2 < argc)
 		{
 			shot = atol(argv[++i]);
@@ -596,13 +630,20 @@ int main(int argc, char** argv)
 			usage();
 	}
 
-	const char* const engine_argv[] = {"femto-doom", "-timedemo", "demo3"};
+	const char* engine_argv[4] = {"femto-doom"};
+	int engine_argc = 1;
+	if (demo_file)
+	{
+		engine_argv[engine_argc++] = "-timedemo";
+		engine_argv[engine_argc++] = "demo3";
+	}
+	if (nodraw)
+		engine_argv[engine_argc++] = "-nodraw";
 
 	start_ms = clock_ms();
 	W_SetWads(demo_file ? with_demo(argv[1], demo_file) : load(argv[1], NULL), load(argv[2], NULL));
-	D_DoomInit(demo_file ? 3 : 1, engine_argv);
+	D_DoomInit(engine_argc, engine_argv);
 
-	uint64_t hash = 0xcbf29ce484222325ULL;
 	for (uint32_t f = 0; f < frames; f++)
 	{
 		if (!demo)
@@ -610,15 +651,16 @@ int main(int argc, char** argv)
 
 		const uint8_t* shown = palette;
 		D_DoomStep();
-		Stat_Capture();
+		trace_tic();
 
-		hash = hash_frame(hash, shown);
+		frames_shown++;
+		if (nodraw)
+			continue;
+		frames_hash = hash_frame(frames_hash, shown);
 		if ((long)f == shot)
 			save_ppm(shot_file, shown);
 	}
 
-	if (statdump_file)
-		Stat_Dump(statdump_file);
-	printf("frames %lu hash %016llx\n", (unsigned long)frames, (unsigned long long)hash);
+	finish();
 	return 0;
 }

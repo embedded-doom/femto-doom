@@ -50,14 +50,20 @@ A platform compiles [src](src) together with its own code; see [platform.md](doc
 
 ## Example
 
-[host](examples/host) is a platform without a screen: it draws into memory, prints frame hashes
-and saves screenshots.
+[host](examples/host) is a platform without a screen: it draws into memory, prints frame hashes,
+saves screenshots and traces demos.
 
 ```bash
 make -C examples/host
 examples/host/host wads/GRAPHICS.WAD wads/MAPS.WAD -shot 500 shot.ppm
-make -C examples/host check WADS=$PWD/wads
+examples/host/host wads/GRAPHICS.WAD wads/MAPS.WAD -playdemo demo.lmp -nodraw -trace demo.trace
 ```
+
+## Tests
+
+CI plays DEMO1 to DEMO3 and the episode 1 demos of [statcheck](https://github.com/chocolate-doom/statcheck)
+in the host and in Chocolate Doom, which [chocolate.patch](tests/chocolate.patch) makes trace every tic
+the same way, and compares the traces.
 
 ## Licence
 
