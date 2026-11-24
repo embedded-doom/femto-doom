@@ -48,22 +48,17 @@ A platform compiles [src](src) together with its own code; see [platform.md](doc
 - [build.md](docs/build.md): build options
 - [wad-format.md](docs/wad-format.md): the WADs and the tool that builds them
 
-## Example
-
-[host](examples/host) is a platform without a screen: it draws into memory, prints frame hashes,
-saves screenshots and traces demos.
-
-```bash
-make -C examples/host
-examples/host/host wads/GRAPHICS.WAD wads/MAPS.WAD -shot 500 shot.ppm
-examples/host/host wads/GRAPHICS.WAD wads/MAPS.WAD -playdemo demo.lmp -nodraw -trace demo.trace
-```
-
 ## Tests
 
-CI plays DEMO1 to DEMO3 and the episode 1 demos of [statcheck](https://github.com/chocolate-doom/statcheck)
-in the host and in Chocolate Doom, which [chocolate.patch](tests/chocolate.patch) makes trace every tic
-the same way, and compares the traces.
+[run.py](tests/run.py) plays DEMO1 to DEMO3 and the episode 1 demos of
+[statcheck](https://github.com/chocolate-doom/statcheck) in a [headless](tests/headless) platform
+and in Chocolate Doom, which [trace.patch](tests/chocolate/trace.patch) makes trace every tic the
+same way, and compares the traces. Each demo is played in builds with gcc, clang and clang `-m32`.
+
+```bash
+python tests/run.py builtin chocolate-doom doom1.wad
+python tests/run.py statcheck chocolate-doom doom1.wad statcheck
+```
 
 ## Licence
 

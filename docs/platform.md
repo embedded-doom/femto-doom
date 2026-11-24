@@ -2,7 +2,7 @@
 
 femto-doom is the engine only. A platform builds it, hands it the two WADs, feeds it time and
 input, and draws the engine's output. The whole contract is [`src/i_platform.h`](../src/i_platform.h);
-[`examples/host`](../examples/host/host.c) implements all of it without a screen.
+[`tests/headless`](../tests/headless/headless.c) implements all of it without a screen.
 
 ## Building
 

@@ -9,6 +9,7 @@ env:
   DOOM1_SHA256: 1d7d43be501e67d927e415e0b8f3e29c3bf33075e859721816f652a526cac771
   CHOCOLATE_URL: https://www.chocolate-doom.org/downloads/3.0.1/chocolate-doom-3.0.1.tar.gz
   CHOCOLATE_SHA256: d435d6177423491d60be706da9f07d3ab4fabf3e077ec2a3fc216e394fcfc8c7
+  CHOCOLATE: chocolate-doom-3.0.1/src/chocolate-doom
   STATCHECK_COMMIT: 0fbe718e3a5624b344e72f397669f50f26b1b668
 
 jobs:
@@ -29,14 +30,28 @@ jobs:
       - name: Tests
         run: uv run pytest
 
-  chocolate:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      CC: gcc -std=c11 -fno-short-enums -O2 -Wall -Wextra -Werror -Isrc
+      SWITCHES: >-
+        -DHIGH_DETAIL -DFLAT_WALL -DSMALL_TRIG -DW_FETCH -DNO_DEMOS -DLOW_MEMORY
+        -DST_PARTIAL_REFRESH -DDISABLE_STATUS_BAR
+        -DRANGE_CHECK -DINSTRUMENTED -DDEBUG -DONE_WALL_TEXTURE
+    steps:
+      - uses: actions/checkout@v5
+      - name: Compile with every switch on
+        run: for f in src/*.c; do $CC $SWITCHES -c "$f" -o /dev/null || exit 1; done
+
+  demos:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - name: Install doom1.wad and SDL
+      - uses: astral-sh/setup-uv@v6
+      - name: Install doom1.wad, SDL, clang and gcc-multilib
         run: |
           sudo apt-get update
-          sudo apt-get install -y doom-wad-shareware libsdl2-dev libsdl2-mixer-dev libsdl2-net-dev
+          sudo apt-get install -y doom-wad-shareware libsdl2-dev libsdl2-mixer-dev libsdl2-net-dev clang gcc-multilib
           echo "$DOOM1_SHA256  $DOOM1_WAD" | sha256sum -c
       - name: Build Chocolate Doom with the trace
         run: |
@@ -44,123 +59,32 @@ jobs:
           echo "$CHOCOLATE_SHA256  chocolate.tar.gz" | sha256sum -c
           tar xzf chocolate.tar.gz
           cd chocolate-doom-3.0.1
-          patch -p1 < ../tests/chocolate.patch
+          patch -p1 < ../tests/chocolate/trace.patch
           ./configure --quiet
           make -j"$(nproc)" >/dev/null
-      - name: Collect the demos
+      - name: builtin demos (DEMO1, DEMO2, DEMO3)
+        run: python3 tests/run.py builtin "$CHOCOLATE" "$DOOM1_WAD"
+      - name: Fetch statcheck
         run: |
           git init -q statcheck
           git -C statcheck remote add origin https://github.com/chocolate-doom/statcheck
           git -C statcheck sparse-checkout set --no-cone '/demos/doom/*/e1*/*.lmp'
           git -C statcheck fetch -q --depth 1 --filter=blob:none origin "$STATCHECK_COMMIT"
           git -C statcheck checkout -q FETCH_HEAD
-          python3 tests/demos.py "$DOOM1_WAD" statcheck demos
-      - name: Trace the demos
-        run: sh tests/chocolate.sh chocolate-doom-3.0.1/src/chocolate-doom "$DOOM1_WAD" demos traces
-      - uses: actions/upload-artifact@v4
-        with:
-          name: traces
-          path: |
-            demos
-            traces
+      - name: statcheck demos
+        run: python3 tests/run.py statcheck "$CHOCOLATE" "$DOOM1_WAD" statcheck
 
-  host:
-    name: host (${{ matrix.name }})
-    needs: chocolate
+  embedded:
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: gcc
-            cc: gcc
-            frames: true
-          - name: clang
-            cc: clang
-            frames: true
-          - name: 4-byte pointers
-            cc: gcc -m32
-            frames: true
-          - name: W_FETCH and ST_PARTIAL_REFRESH
-            cc: gcc
-            defines: W_FETCH ST_PARTIAL_REFRESH
-            frames: true
-          - name: 320 x 200
-            cc: gcc
-            screen: 320x200
-            make: SCREEN_WIDTH=320 SCREEN_HEIGHT=200
-          - name: 80 x 58 view, small limits and tables
-            cc: gcc
-            make: VIEW_WINDOW_WIDTH=80 VIEW_WINDOW_HEIGHT=58
-            defines: MAX_DRAWSEGS=64 MAX_OPENINGS=512 SMALL_TRIG
     env:
-      CFLAGS: -O2 -Wall -Wextra -Werror
-      WADS: wads/${{ matrix.screen || '240x160' }}
+      CC: >-
+        clang --target=arm-none-eabi -mcpu=cortex-m0 --sysroot=/usr/lib/arm-none-eabi
+        -Os -std=c11 -fno-short-enums -Wall -Wextra -Werror -Isrc
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
-      - name: Install doom1.wad and gcc-multilib
+      - name: Install clang and the newlib headers
         run: |
           sudo apt-get update
-          sudo apt-get install -y doom-wad-shareware gcc-multilib
-          echo "$DOOM1_SHA256  $DOOM1_WAD" | sha256sum -c
-      - uses: actions/download-artifact@v4
-        with:
-          name: traces
-      - name: Build the WADs
-        run: uv run --project tools/femtowad femtowad wads "$DOOM1_WAD" "$WADS" --screen ${{ matrix.screen || '240x160' }}
-      - name: Build the host
-        run: make -B -C examples/host CC="${{ matrix.cc }}" DEFINES="${{ matrix.defines }}" ${{ matrix.make }}
-      - name: Every demo, traced as by Chocolate Doom
-        run: sh tests/check.sh examples/host/host "$WADS" demos traces -nodraw
-      - name: DEMO1 to DEMO3, drawn
-        run: |
-          mkdir attract
-          cp demos/demo1.lmp demos/demo2.lmp demos/demo3.lmp attract
-          sh tests/check.sh examples/host/host "$WADS" attract traces | tee frames.txt
-      - if: matrix.frames
-        uses: actions/upload-artifact@v4
-        with:
-          name: frames-${{ strategy.job-index }}
-          path: frames.txt
-
-  frames:
-    needs: host
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: frames-*
-      - name: The same frames in every build of one screen
-        run: |
-          set -- frames-*/frames.txt
-          cat "$1"
-          for f in "$@"; do cmp "$1" "$f"; done
-
-  cross-compile:
-    name: cross-compile (${{ matrix.name }})
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: defaults
-            defines: ""
-          - name: small
-            defines: >-
-              -DVIEW_WINDOW_WIDTH=80 -DVIEW_WINDOW_HEIGHT=58 -DSMALL_TRIG
-              -DW_FETCH -DST_PARTIAL_REFRESH -DNO_DEMOS
-          - name: debug
-            defines: -DRANGE_CHECK -DINSTRUMENTED -DDEBUG
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install arm-none-eabi-gcc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi
-      - name: Compile
-        run: |
-          for f in src/*.c; do
-            arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -std=c11 -fno-short-enums -Wall -Wextra -Werror \
-              ${{ matrix.defines }} -Isrc -c "$f" -o /dev/null || exit 1
-          done
+          sudo apt-get install -y clang gcc-arm-none-eabi
+      - name: Cross-compile
+        run: for f in src/*.c; do $CC -c "$f" -o /dev/null || exit 1; done
