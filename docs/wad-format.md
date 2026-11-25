@@ -1,29 +1,29 @@
 # WAD format
 
-femto-doom reads two WADs in place, `GRAPHICS.WAD` and `MAPS.WAD`, both little-endian.
-[femtowad](../tools/femtowad) builds them from a Doom IWAD:
+femto-doom reads one WAD in place, little-endian. [femtowad](../tools/femtowad) builds it from a
+Doom IWAD:
 
 ```bash
-femtowad wads doom1.wad <out-dir> [--screen WxH] [--texture-shift N] [--high-detail]
+femtowad wad doom1.wad <out.wad> [--screen WxH] [--texture-shift N] [--high-detail]
 ```
 
 ## Layout
 
 A WAD is one block of bytes in Doom's layout: a header, the lumps (named pieces of data) and a
-directory, the table of every lump's name, offset and size. The platform passes both WADs to
-`W_SetWads` as addresses, e.g. in flash, and the engine finds a lump by looking its name up in
+directory, the table of every lump's name, offset and size. The platform passes the WAD to
+`W_SetWad` as an address, e.g. in flash, and the engine finds a lump by looking its name up in
 the directory.
 
-The engine reads lump counts as 16 bits and sizes as 32 bits. Lumps with the same data share it.
+The engine reads the lump count as 16 bits and sizes as 32 bits. Lumps with the same data share it.
 
 Every lump starts at a multiple of 32 bytes, so a record of 32 bytes or a smaller power of two
-never spans two cache lines of that size. The platform places both WADs at such a multiple, too.
+never spans two cache lines of that size. The platform places the WAD at such a multiple, too.
 
-Both WADs hold a lump `FEMTOWAD` with the format version (u16), checked at start-up against
-`WAD_VERSION` in `info.h`. In the graphics WAD the screen width and height follow (u16 each),
-checked against `SCREEN_WIDTH` and `SCREEN_HEIGHT`.
+The graphics, sounds and music come first, then the maps. A lump `FEMTOWAD` holds the format
+version (u16), checked at start-up against `WAD_VERSION` in `info.h`, then the screen width and
+height (u16 each), checked against `SCREEN_WIDTH` and `SCREEN_HEIGHT`.
 
-## Graphics WAD
+## Graphics, sounds and music
 
 Values are i16 unless noted.
 
@@ -43,9 +43,9 @@ Values are i16 unless noted.
 | `DEMO3` | the attract-mode demo |
 | `DPPISTOL` … | the PC speaker sounds, consecutive in the order of the `sfx_` numbers in `sounds.h`, as in Doom: 0 (u16), the tone count (u16), a tone (u8) per 1/140 s |
 | `D_E1M1` … | the songs for one PC speaker voice, consecutive in the order of the `mus_` numbers in `sounds.h`: pair count (u16), then per pair a tone (u8) and its length in 1/140 s (u8), or a drum (u8, 128 + kind: kick, snare, hi-hat or cymbal, other) and 0 |
-| status bar, menu and intermission pictures, sprites, wall patches | Doom's patch format (`patch_t` in [i_platform.h](../src/i_platform.h)); the status bar's scaled as the bar is, walls keep every 4th column and sprites every 2nd unless `femtowad wads` is told otherwise, equal columns are stored once |
+| status bar, menu and intermission pictures, sprites, wall patches | Doom's patch format (`patch_t` in [i_platform.h](../src/i_platform.h)); the status bar's scaled as the bar is, walls keep every 4th column and sprites every 2nd unless `femtowad wad` is told otherwise, equal columns are stored once |
 
-Other flats, the MIDI music and the sampled sound effects are not in it.
+Other flats, the MIDI music and the sampled sound effects are left out.
 
 ### Tones
 
@@ -59,7 +59,7 @@ moment, the platform sounds it as it can while the song goes on, or not at all. 
 until all but 1 in 20 of these notes reach tone 1; the rest move by octaves on their own.
 Percussion is left out.
 
-## Map WAD
+## Maps
 
 Per map a marker `E1Mx` and nine lumps in this order, then `E1MxTL` and `E1MxGL` of every map.
 Values are i16 unless noted. A map has at most 255 sectors, 255 textures and 255 changeable sides.

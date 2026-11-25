@@ -119,8 +119,8 @@ extern const uint8_t *fullcolormap;
 // The platform calls these
 //
 
-// The graphics WAD and the map WAD, as the platform maps them, both 4-byte aligned.
-void W_SetWads(const uint8_t* iwad, const uint8_t* maps);
+// The WAD, as the platform maps it, 4-byte aligned.
+void W_SetWad(const uint8_t* wad);
 
 // Sets the game up and returns; the platform then calls D_DoomStep for every frame.
 void D_DoomInit(int argc, const char * const * argv);
@@ -156,23 +156,23 @@ void I_Log(const char *text);
 _Noreturn void I_Fatal(const char *message);
 
 // With W_FETCH defined, every read of WAD memory goes through W_Fetch, src being an address
-// inside one of the two WADs.
+// inside the WAD.
 #if defined W_FETCH
 void W_Fetch(const void* src, void* dst, uint16_t len);
 #endif
 
-// A sound effect, Doom's PC speaker lump inside the graphics WAD: 0 (u16), the tone count (u16),
+// A sound effect, Doom's PC speaker lump inside the WAD: 0 (u16), the tone count (u16),
 // then a tone (u8) per 1/140 s, 0 for silence. It replaces the one playing. volume runs from 1,
 // far away, to 120, close by.
 void DMX_PlaySound(const uint8_t* sound, uint8_t volume);
 
-// A song for one PC speaker voice inside the graphics WAD, or NULL to stop: the pair count
+// A song for one PC speaker voice inside the WAD, or NULL to stop: the pair count
 // (u16), then per pair a tone (u8) as in the sounds and its length in 1/140 s (u8), or a drum hit
 // (u8, 128 + kind: kick, snare, hi-hat or cymbal, other) and 0. Sounds play over it while the song
 // goes on. looping does not matter with NULL.
 void DMX_PlaySong(const uint8_t* song, boolean looping);
 
-// 256 RGB triples, inside the graphics WAD. A platform may hold a new palette back until the
+// 256 RGB triples, inside the WAD. A platform may hold a new palette back until the
 // next I_FinishUpdate.
 void I_SetPalette(const uint8_t* palette);
 

@@ -42,7 +42,7 @@
 // Size and detail
 //==============================================================================================
 
-// The screen in pixels; must match femtowad wads --screen.
+// The screen in pixels; must match femtowad wad --screen.
 #if !defined SCREEN_WIDTH
 #define SCREEN_WIDTH  240
 #endif
@@ -69,7 +69,7 @@
 #define MAP_WIDTH SCREEN_WIDTH
 #endif
 
-// Walls keep every 2^n-th row; must match femtowad wads --texture-shift.
+// Walls keep every 2^n-th row; must match femtowad wad --texture-shift.
 #if !defined TEXTURE_SHIFT
 #define TEXTURE_SHIFT 0
 #endif
@@ -123,7 +123,7 @@
 //==============================================================================================
 
 // Composed wall textures keep every column instead of every 2^N-th, N from femtowad's
-// --wall-column-shift; must match femtowad wads --high-detail.
+// --wall-column-shift; must match femtowad wad --high-detail.
 // #define HIGH_DETAIL
 
 // Walls in one colour.

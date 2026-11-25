@@ -135,7 +135,7 @@ int16_t _g_thingPoolSize;
 zref_t _g_removedrests;
 
 
-// Lump order in a map WAD: each map needs a couple of lumps
+// Lump order in a WAD: each map needs a couple of lumps
 // to provide a complete scene geometry description.
 enum {
   ML_LABEL,             // A separator, name, ExMx or MAPxx
@@ -157,7 +157,7 @@ enum {
 
 static void P_LoadSegs (int16_t lump)
 {
-    _g_segs = (const seg_t*)W_GetMapLumpByNum(lump);
+    _g_segs = (const seg_t*)W_GetLumpByNum(lump);
 }
 
 //
@@ -168,8 +168,8 @@ static void P_LoadSegs (int16_t lump)
 
 static void P_LoadSubsectors (int16_t lump)
 {
-  numsubsectors = W_MapLumpLength (lump) / sizeof(mapsubsector_t);
-  _g_mapsubsectors = W_GetMapLumpByNum(lump);
+  numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
+  _g_mapsubsectors = W_GetLumpByNum(lump);
 }
 
 //
@@ -191,8 +191,8 @@ static void P_LoadSectors (int16_t lump)
 {
   int16_t  i;
 
-  _g_numsectors = W_MapLumpLength (lump) / sizeof(mapsector_t);
-  _g_mapsectors = W_GetMapLumpByNum(lump);
+  _g_numsectors = W_LumpLength (lump) / sizeof(mapsector_t);
+  _g_mapsectors = W_GetLumpByNum(lump);
   _g_sectors = Z_CallocLevel(_g_numsectors * sizeof(sector_t));
   _g_secbytes = (_g_numsectors + 7) / 8;
   _g_secbits = Z_CallocLevel(SB_PLANES * _g_secbytes);
@@ -226,8 +226,8 @@ static void P_LoadSectors (int16_t lump)
 
 static void P_LoadNodes (int16_t lump)
 {
-  numnodes = W_MapLumpLength (lump) / sizeof(mapnode_t);
-  nodes = W_GetMapLumpByNum(lump);
+  numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
+  nodes = W_GetLumpByNum(lump);
 }
 
 
@@ -263,8 +263,8 @@ static void* P_CallocPool(int16_t count, uint16_t size)
 
 static void P_LoadThings(int16_t lump, int16_t map)
 {
-	int16_t mapThingCount = W_MapLumpLength(lump) / sizeof(mapthing_t);
-	const mapthing_t* data = W_GetMapLumpByNum(lump);
+	int16_t mapThingCount = W_LumpLength(lump) / sizeof(mapthing_t);
+	const mapthing_t* data = W_GetLumpByNum(lump);
 
 	// Map statics need no pool. Map monsters and barrels spawn asleep, without a mobj.
 	_g_thingPoolSize  = THING_POOL_RESERVE;
@@ -289,8 +289,8 @@ static void P_LoadThings(int16_t lump, int16_t map)
 
 static void P_LoadThings2(int16_t lump, int16_t map)
 {
-	int16_t mapThingCount = W_MapLumpLength(lump) / sizeof(mapthing_t);
-	const mapthing_t* data = W_GetMapLumpByNum(lump);
+	int16_t mapThingCount = W_LumpLength(lump) / sizeof(mapthing_t);
+	const mapthing_t* data = W_GetLumpByNum(lump);
 
 	for (int16_t i = 0; i < mapThingCount; i++)
 	{
@@ -312,8 +312,8 @@ static void P_LoadThings2(int16_t lump, int16_t map)
 
 static void P_LoadLineDefs (int16_t lump)
 {
-	_g_numlines = W_MapLumpLength(lump) / sizeof(line_t);
-	_g_maplines = W_GetMapLumpByNum(lump);
+	_g_numlines = W_LumpLength(lump) / sizeof(line_t);
+	_g_maplines = W_GetLumpByNum(lump);
 
 	_g_linebytes   = (_g_numlines + 7) / 8;
 	_g_linebits    = Z_CallocLevel(LB_PLANES * _g_linebytes);
@@ -328,8 +328,8 @@ static void P_LoadLineDefs (int16_t lump)
 
 static void P_LoadSideDefs (int16_t lump)
 {
-  numsides = W_MapLumpLength(lump) / sizeof(mapsidedef_t);
-  _g_mapsides = W_GetMapLumpByNum(lump);
+  numsides = W_LumpLength(lump) / sizeof(mapsidedef_t);
+  _g_mapsides = W_GetLumpByNum(lump);
 
   int16_t numchangeable = 0;
   for (int16_t i = 0; i < numsides; i++)
@@ -439,7 +439,7 @@ side_t* P_ChangeableSide(int16_t n)
 
 static void P_LoadBlockMap (int16_t lump)
 {
-    _g_blockmaplump = W_GetMapLumpByNum(lump);
+    _g_blockmaplump = W_GetLumpByNum(lump);
 
     int16_t header[4];
     W_Fetch(_g_blockmaplump, header, sizeof(header));
@@ -462,7 +462,7 @@ static void P_LoadBlockMap (int16_t lump)
 
 static void P_LoadReject(int16_t lump)
 {
-  _g_rejectmatrix = W_GetMapLumpByNum(lump);
+  _g_rejectmatrix = W_GetLumpByNum(lump);
 }
 
 //
@@ -497,11 +497,11 @@ static void M_AddToBox(fixed_t* box,fixed_t x,fixed_t y)
 
 static void P_GroupLines (int16_t map)
 {
-    // the lines of each sector, from the map WAD's E1MxGL
+    // the lines of each sector, from the map's E1MxGL
     {
         char name[] = "E1M0GL";
         name[3] = '0' + map;
-        const byte* gl = W_GetMapLumpByNum(W_GetMapNumForName(name));
+        const byte* gl = W_GetLumpByNum(W_GetNumForName(name));
 
         struct { uint16_t numsectors, numsubsectors; uint32_t first, lines, subsecsector, adjacentfirst, adjacent; } h;
         W_Fetch(gl, &h, sizeof(h));
@@ -599,7 +599,7 @@ void P_SetupLevel(int16_t map)
 #endif
     lumpname[3] = '0' + map;
 
-    lumpnum = W_GetMapNumForName(lumpname);
+    lumpnum = W_GetNumForName(lumpname);
 
     P_LoadThings    (lumpnum + ML_THINGS, map);
     P_LoadSectors   (lumpnum + ML_SECTORS);

@@ -121,7 +121,7 @@ def info_h() -> str:
         "extern const mobjinfo_t mobjinfo[NUMMOBJTYPES];\n",
         "\n".join(flag_lines) + "\n",
         f"#define MAX_SPRITE_FRAMES {MAX_SPRITE_FRAMES}\n",
-        f"// The format of both WADs, kept in their FEMTOWAD lumps.\n#define WAD_VERSION {WAD_VERSION}\n",
+        f"// The WAD format, kept in its FEMTOWAD lump.\n#define WAD_VERSION {WAD_VERSION}\n",
         "#endif\n",
     ]
     return "\n".join(parts)

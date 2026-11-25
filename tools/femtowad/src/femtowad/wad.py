@@ -86,8 +86,8 @@ class Wad:
     def to_bytes(self) -> bytes:
         """The directory first, then each distinct lump once, at a multiple of `ALIGN` bytes.
 
-        Lumps with the same data share it. The engine reads the lump count and sizes as 16 bits;
-        it reads lumps of 64 KiB or more, such as TEXCOLS, only piecewise.
+        Lumps with the same data share it. The engine reads the lump count as 16 bits; it
+        reads lumps of 64 KiB or more, such as TEXCOLS, only piecewise.
         """
         if len(self.lumps) > MAX_LUMPS:
             raise ValueError(f"{len(self.lumps)} lumps, at most {MAX_LUMPS}")

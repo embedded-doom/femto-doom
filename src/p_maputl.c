@@ -239,7 +239,7 @@ void P_LineOpening(const line_t* linedef)
 
 //
 // Things the map spawns are not chained while they stay where the map put them: the chains
-// then hold only what was linked since. The map WAD's E1MxTL lists, per sector and block,
+// then hold only what was linked since. The map's E1MxTL lists, per sector and block,
 // the map things in reverse load order, as the chains would have them after their later
 // links. Memory keeps a bit per thing. A map static never moves and is never shot, so its state follows from its first
 // tics and the time since loading, and its heights are its sector's until a moving sector
@@ -311,7 +311,7 @@ void P_BeginLoadThings(int16_t map)
 {
   char name[] = "E1M0TL";
   name[3] = '0' + map;
-  tl = W_GetMapLumpByNum(W_GetMapNumForName(name));
+  tl = W_GetLumpByNum(W_GetNumForName(name));
 
   loadheader_t h;
   W_Fetch(tl, &h, sizeof(h));

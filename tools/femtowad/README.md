@@ -1,13 +1,13 @@
 # femtowad
 
-femto-doom's data tool. Builds the engine's two WADs from a Doom IWAD and writes its generated
+femto-doom's data tool. Builds the engine's WAD from a Doom IWAD and writes its generated
 sources. Needs [uv](https://docs.astral.sh/uv/).
 
-## WADs
+## WAD
 
 ```bash
 uv tool install ./tools/femtowad
-femtowad wads doom1.wad wads/
+femtowad wad doom1.wad femto.wad
 ```
 
 | Option | Default | Must match the engine's |

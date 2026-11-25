@@ -1,6 +1,6 @@
 # Platform interface
 
-femto-doom is the engine only. A platform builds it, hands it the two WADs, feeds it time and
+femto-doom is the engine only. A platform builds it, hands it the WAD, feeds it time and
 input, and draws the engine's output. The whole contract is [`src/i_platform.h`](../src/i_platform.h);
 [`examples/host`](../examples/host/host.c) implements all of it on SDL2.
 
@@ -14,7 +14,7 @@ enums `int`-sized (`-fno-short-enums` on compilers that shorten them). Of the C 
 ## Running
 
 ```c
-W_SetWads(graphics_wad, map_wad);   /* both mapped in memory, see wad-format.md */
+W_SetWad(wad);                      /* mapped in memory, see wad-format.md */
 D_DoomInit(argc, argv);             /* sets the game up and returns */
 for (;;)
     D_DoomStep();                   /* runs the tics that are due, draws one frame */
@@ -23,8 +23,8 @@ for (;;)
 Input goes in from `I_StartTic` as `event_t`s posted with `D_PostEvent`, the keys being `KEYD_*`.
 
 With `W_FETCH` defined, every read of WAD memory goes through the platform's
-`W_Fetch(src, dst, len)`, `src` being an address inside one of the two WADs. Pointers the engine
-hands the platform point into the WADs too; the platform reads them the same way.
+`W_Fetch(src, dst, len)`, `src` being an address inside the WAD. Pointers the engine hands the
+platform point into the WAD too; the platform reads them the same way.
 
 ## Platform functions
 

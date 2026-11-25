@@ -90,7 +90,7 @@ typedef char assertDegenmobjSize[sizeof(degenmobj_t) == 8 ? 1 : -1];
 // Stores things/mobjs.
 //
 
-// Its lines are in the map WAD's E1MxGL; P_SectorSoundOrg finds its sound origin.
+// Its lines are in the map's E1MxGL; P_SectorSoundOrg finds its sound origin.
 // Its things are in chains shared by SECBUCKETS sectors, and the
 // sound target is _g_soundtarget for every sector with SB_HEARD.
 typedef struct
@@ -178,7 +178,7 @@ typedef char assertMapsectorSize[sizeof(mapsector_t) == 12 ? 1 : -1];
 // by setting textures and offsets.
 //
 
-// The sector it faces is in the map WAD's SIDEDEFS: SIDE_SECTOR.
+// The sector it faces is in the map's SIDEDEFS: SIDE_SECTOR.
 typedef struct
 {
     uint8_t textureoffset; // add this to the calculated texture column
@@ -341,7 +341,7 @@ typedef char assertSegSize[sizeof(seg_t) == 18 ? 1 : -1];
 //  (all or some) sides of a convex BSP leaf.
 //
 
-// Its sector is in the map WAD's E1MxGL.
+// Its sector is in the map's E1MxGL.
 #define P_SubsectorSector(ss) (&_g_sectors[W_FetchUInt8(&_g_subsecsector[ss])])
 
 

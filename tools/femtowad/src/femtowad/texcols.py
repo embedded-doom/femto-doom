@@ -3,7 +3,7 @@
 """TEXCOLS: every wall texture as columns at a fixed stride, the bytes R_DrawColumnWall samples,
 so drawing a wall column needs no patch, directory or column offset lookup.
 
-A column is read from the written graphics WAD, because a short post is sampled past its end, up to
+A column is read from the graphics as written, because a short post is sampled past its end, up to
 the end of its patch.
 """
 

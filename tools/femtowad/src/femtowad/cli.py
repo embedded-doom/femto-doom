@@ -2,15 +2,15 @@
 # Copyright 2026 Jakob Jungreuthmayer
 """femto-doom's data tool.
 
-`wads` builds GRAPHICS.WAD and MAPS.WAD from a Doom IWAD, for the engine's screen size. The
-maps keep the IWAD's own nodes. The layout follows jWadUtil by Frenkel Smeijers, which made the
-WADs of Doom64KB, the engine femto-doom grew from.
+`wad` builds femto-doom's WAD from a Doom IWAD, for the engine's screen size. The maps keep the
+IWAD's own nodes. The layout follows jWadUtil by Frenkel Smeijers, which made the WADs of
+Doom64KB, the engine femto-doom grew from.
 
 `generate` writes the engine's generated sources: info.c and info.h from info.py, the one
-source of thing types, their states and sprites, which `wads` uses too, and r_view.c and
+source of thing types, their states and sprites, which `wad` uses too, and r_view.c and
 r_view.h, the view tables of every supported view width.
 
-usage: uv run --project tools/femtowad femtowad wads <doom1.wad> <out-dir>
+usage: uv run --project tools/femtowad femtowad wad <doom1.wad> <out.wad>
            [--screen WxH] [--texture-shift N] [--high-detail]
            [--wall-column-shift N] [--sprite-column-shift N]
        uv run --project tools/femtowad femtowad generate [--check]
@@ -36,20 +36,19 @@ def find_engine() -> Path | None:
     return next((d for d in Path(__file__).resolve().parents if (d / "src" / "info.c").is_file()), None)
 
 
-def wads(args: argparse.Namespace) -> None:
+def wad(args: argparse.Namespace) -> None:
     iwad = Wad.read(args.iwad)
     art = generate_art(iwad, args.screen, lumps_read_by_name())
     graphics = build_graphics(
         iwad, art, args.texture_shift, args.high_detail, args.wall_column_shift, args.sprite_column_shift
     )
     maps = build_maps(iwad, texture_names(iwad))
-    args.out.mkdir(parents=True, exist_ok=True)
     graphics["FEMTOWAD"] = struct.pack("<HHH", WAD_VERSION, *args.screen)
-    maps["FEMTOWAD"] = struct.pack("<H", WAD_VERSION)
-    for name, wad in (("GRAPHICS.WAD", graphics), ("MAPS.WAD", maps)):
-        data = wad.to_bytes()
-        (args.out / name).write_bytes(data)
-        print(f"{args.out / name}: {len(data)} B, {len(wad)} lumps")
+    out = Wad([*graphics, *maps])
+    data = out.to_bytes()
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_bytes(data)
+    print(f"{args.out}: {len(data)} B, {len(out)} lumps")
 
 
 def generate(args: argparse.Namespace) -> None:
@@ -63,27 +62,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="femtowad", description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(required=True)
 
-    wads_parser = commands.add_parser("wads", help="build the WAD pair from an IWAD")
-    wads_parser.add_argument("iwad", type=Path, help="Doom IWAD, such as the shareware doom1.wad")
-    wads_parser.add_argument("out", type=Path, help="directory for GRAPHICS.WAD and MAPS.WAD")
-    wads_parser.add_argument(
+    wad_parser = commands.add_parser("wad", help="build the WAD from an IWAD")
+    wad_parser.add_argument("iwad", type=Path, help="Doom IWAD, such as the shareware doom1.wad")
+    wad_parser.add_argument("out", type=Path, help="the WAD to write")
+    wad_parser.add_argument(
         "--screen", type=Screen.parse, default=Screen(240, 160), help="the engine's SCREEN_WIDTH x SCREEN_HEIGHT"
     )
-    wads_parser.add_argument(
-        "--texture-shift", type=int, default=0, choices=range(8), help="the engine's TEXTURE_SHIFT"
-    )
-    wads_parser.add_argument("--high-detail", action="store_true", help="the engine is built with HIGH_DETAIL")
-    wads_parser.add_argument(
+    wad_parser.add_argument("--texture-shift", type=int, default=0, choices=range(8), help="the engine's TEXTURE_SHIFT")
+    wad_parser.add_argument("--high-detail", action="store_true", help="the engine is built with HIGH_DETAIL")
+    wad_parser.add_argument(
         "--wall-column-shift",
         type=int,
         default=2,
         choices=range(3),
         help="walls keep every 2^N-th column; fine walls shimmer in the distance",
     )
-    wads_parser.add_argument(
+    wad_parser.add_argument(
         "--sprite-column-shift", type=int, default=1, choices=range(3), help="sprites keep every 2^N-th column"
     )
-    wads_parser.set_defaults(run=wads)
+    wad_parser.set_defaults(run=wad)
 
     info_parser = commands.add_parser("generate", help="write the engine's generated sources")
     info_parser.add_argument("--check", action="store_true", help="only fail if they differ from info.py")

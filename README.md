@@ -34,19 +34,19 @@ time and input, and draws what it outputs; [i_platform.h](src/i_platform.h) is t
 
 ## Getting started
 
-femto-doom ships no game data. [femtowad](tools/femtowad) builds its two WADs from Doom's
-shareware `doom1.wad`:
+femto-doom ships no game data. [femtowad](tools/femtowad) builds its WAD from Doom's shareware
+`doom1.wad`:
 
 ```bash
 uv tool install ./tools/femtowad
-femtowad wads doom1.wad wads/
+femtowad wad doom1.wad femto.wad
 ```
 
 A platform compiles [src](src) together with its own code; see [platform.md](docs/platform.md).
 
 - [platform.md](docs/platform.md): building the engine and the platform interface
 - [options.h](src/options.h): build options
-- [wad-format.md](docs/wad-format.md): the WADs and the tool that builds them
+- [wad-format.md](docs/wad-format.md): the WAD and the tool that builds it
 
 ## Example
 
@@ -54,7 +54,7 @@ A platform compiles [src](src) together with its own code; see [platform.md](doc
 
 ```bash
 make -C examples/host
-examples/host/host wads/GRAPHICS.WAD wads/MAPS.WAD
+examples/host/host femto.wad
 ```
 
 Arrows move and turn, Ctrl fires, Space or Enter uses, `,` and `.` strafe, Space with `,` or `.`

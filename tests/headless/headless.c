@@ -210,7 +210,7 @@ static void set_word(uint8_t* p, uint32_t v)
 }
 
 
-// The graphics WAD with its DEMO3 lump replaced by the demo in path.
+// The WAD with its DEMO3 lump replaced by the demo in path.
 static const uint8_t* with_demo(const char* wad_path, const char* path)
 {
 	long wad_size, demo_size;
@@ -256,8 +256,8 @@ static void trace_tic(void)
 static void usage(void)
 {
 	fprintf(stderr,
-		"usage: headless GRAPHICS.WAD MAPS.WAD DEMO.lmp [-nodraw] [-trace FILE]\n"
-		"                [-shot FRAME FILE.ppm] [-zone BYTES]\n");
+		"usage: headless WAD DEMO.lmp [-nodraw] [-trace FILE] [-shot FRAME FILE.ppm]\n"
+		"                [-zone BYTES]\n");
 	exit(2);
 }
 
@@ -268,10 +268,10 @@ int main(int argc, char** argv)
 	const char* shot_file = NULL;
 	boolean nodraw = false;
 
-	if (argc < 4)
+	if (argc < 3)
 		usage();
 
-	for (int i = 4; i < argc; i++)
+	for (int i = 3; i < argc; i++)
 	{
 		if (!strcmp(argv[i], "-zone") && i + 1 < argc)
 			zone_size = strtoul(argv[++i], NULL, 10);
@@ -298,7 +298,7 @@ int main(int argc, char** argv)
 		engine_argv[engine_argc++] = "-nodraw";
 
 	start_ms = clock_ms();
-	W_SetWads(with_demo(argv[1], argv[3]), load(argv[2], NULL));
+	W_SetWad(with_demo(argv[1], argv[2]));
 	D_DoomInit(engine_argc, engine_argv);
 
 	for (long f = 0;; f++)

@@ -104,10 +104,10 @@ def first_difference(got: list[str], want: list[str]) -> int | None:
     return None if len(got) == len(want) else min(len(got), len(want))
 
 
-def femto(exe: Path, wads: Path, lmp: Path, want: Path, drawn: bool) -> str | None:
+def femto(exe: Path, wad: Path, lmp: Path, want: Path, drawn: bool) -> str | None:
     """Plays the demo and returns how its trace differs from Chocolate Doom's, if it does."""
     trace = exe.parent / f"{lmp.stem}.trace"
-    args: list[str | Path] = [exe, wads / "GRAPHICS.WAD", wads / "MAPS.WAD", lmp, "-trace", trace]
+    args: list[str | Path] = [exe, wad, lmp, "-trace", trace]
     run = subprocess.run([*args, *([] if drawn else ["-nodraw"])], capture_output=True, text=True, check=False)
     got = trace.read_text().splitlines() if trace.exists() else []
     trace.unlink(missing_ok=True)
@@ -153,15 +153,15 @@ def main() -> None:
         list(pool.map(partial(chocolate, args.chocolate, args.iwad), lmps, traces))
     print("Chocolate Doom traced them", flush=True)
 
-    wads = OUT / "wads"
+    wad = OUT / "femto.wad"
     femtowad = ["uv", "run", "--project", str(ROOT / "tools" / "femtowad"), "femtowad"]
-    subprocess.run([*femtowad, "wads", str(args.iwad), str(wads)], stdout=subprocess.DEVNULL, check=True)
+    subprocess.run([*femtowad, "wad", str(args.iwad), str(wad)], stdout=subprocess.DEVNULL, check=True)
 
     failed = False
     for name, cc in BUILDS.items():
         exe = build(name, cc, out / name)
         with ThreadPoolExecutor(os.cpu_count()) as pool:
-            diffs = [d for d in pool.map(partial(femto, exe, wads, drawn=args.demos == "builtin"), lmps, traces) if d]
+            diffs = [d for d in pool.map(partial(femto, exe, wad, drawn=args.demos == "builtin"), lmps, traces) if d]
         print(f"{name}: {len(lmps) - len(diffs)} of {len(lmps)} match", flush=True)
         for d in diffs:
             print(d)

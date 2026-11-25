@@ -378,11 +378,11 @@ int main(int argc, char** argv)
 {
 	int scale = 4;
 
-	if (argc == 5 && !strcmp(argv[3], "-scale"))
-		scale = atoi(argv[4]);
-	else if (argc != 3)
+	if (argc == 4 && !strcmp(argv[2], "-scale"))
+		scale = atoi(argv[3]);
+	else if (argc != 2)
 	{
-		fprintf(stderr, "usage: host GRAPHICS.WAD MAPS.WAD [-scale N]\n");
+		fprintf(stderr, "usage: host WAD [-scale N]\n");
 		return 2;
 	}
 
@@ -408,7 +408,7 @@ int main(int argc, char** argv)
 	if (audio)
 		SDL_PauseAudioDevice(audio, 0);
 
-	W_SetWads(load(argv[1]), load(argv[2]));
+	W_SetWad(load(argv[1]));
 	start_ms = SDL_GetTicks();
 	D_DoomInit(1, (const char* const[]){"femto-doom"});
 
