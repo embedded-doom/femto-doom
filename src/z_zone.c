@@ -28,6 +28,7 @@
 #include "z_zone.h"
 #include "doomdef.h"
 #include "i_platform.h"
+#include "options.h"
 
 
 //
@@ -77,11 +78,6 @@ typedef struct
 } memblock_t;
 
 #define HEADER_UNITS	((sizeof(memblock_t) + ZONE_UNIT - 1) / ZONE_UNIT)
-
-// A free fragment smaller than this stays with the block allocated before it.
-#if !defined MIN_FRAGMENT
-#define MIN_FRAGMENT		16
-#endif
 
 
 uint8_t* _g_zonebase;

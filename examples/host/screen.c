@@ -23,10 +23,6 @@
 
 #include "screen.h"
 
-#if !defined TEXTURE_SHIFT
-#define TEXTURE_SHIFT 0
-#endif
-
 #define COLEXTRABITS 7
 #define COLBITS      9
 

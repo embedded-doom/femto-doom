@@ -39,6 +39,7 @@
 #define __P_MAPUTL__
 
 #include "r_defs.h"
+#include "options.h"
 
 /* mapblocks are used to check movement against lines and things */
 #define MAPBLOCKUNITS   128
@@ -68,10 +69,6 @@ typedef struct {
     int16_t loadthing;  // isaline == INTERCEPT_SLEEPER
   } d;
 } intercept_t;
-
-#if !defined MAX_INTERCEPTS
-#define MAX_INTERCEPTS 128
-#endif
 
 // MAX_INTERCEPTS intercepts, sharing memory with the 3D view's, so not while it is drawn.
 intercept_t* R_Intercepts(void);

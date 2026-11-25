@@ -51,6 +51,7 @@
 #include "p_enemy.h"
 #include "s_sound.h"
 #include "i_platform.h"
+#include "options.h"
 #include "v_video.h"
 
 #include "globdata.h"
@@ -259,10 +260,6 @@ static void* P_CallocPool(int16_t count, uint16_t size)
 	return Z_CallocLevel(bytes);
 }
 
-
-#if !defined THING_POOL_RESERVE
-#define THING_POOL_RESERVE 0
-#endif
 
 static void P_LoadThings(int16_t lump, int16_t map)
 {

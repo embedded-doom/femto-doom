@@ -34,14 +34,13 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       CC: gcc -std=c11 -fno-short-enums -O2 -Wall -Wextra -Werror -Isrc
-      SWITCHES: >-
-        -DHIGH_DETAIL -DFLAT_WALL -DSMALL_TRIG -DW_FETCH -DNO_DEMOS -DLOW_MEMORY
-        -DST_PARTIAL_REFRESH -DDISABLE_STATUS_BAR
-        -DRANGE_CHECK -DINSTRUMENTED -DDEBUG -DONE_WALL_TEXTURE
     steps:
       - uses: actions/checkout@v5
-      - name: Compile with every switch on
-        run: for f in src/*.c; do $CC $SWITCHES -c "$f" -o /dev/null || exit 1; done
+      - name: Compile with every switch in options.h on
+        run: |
+          switches=$(sed -n 's|^// #define \([A-Z_]*\)$|-D\1|p' src/options.h)
+          echo $switches
+          for f in src/*.c; do $CC $switches -c "$f" -o /dev/null || exit 1; done
 
   demos:
     runs-on: ubuntu-24.04

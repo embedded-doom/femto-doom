@@ -52,6 +52,7 @@
 #include "g_game.h"
 
 #include "globdata.h"
+#include "options.h"
 
 
 enum automapmode_e automapmode; // Mode that the automap is in
@@ -70,9 +71,6 @@ static const uint8_t mapcolor_unsn = 104;    //  79  79  79 computer map unseen 
 static const uint8_t mapcolor_sngl = 208;    // 255 255 255 single player arrow color
 
 
-#if !defined MAP_WIDTH
-#define MAP_WIDTH SCREEN_WIDTH
-#endif
 static const int16_t f_w = MAP_WIDTH;
 static const int16_t f_h = VIEW_WINDOW_HEIGHT;
 

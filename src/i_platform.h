@@ -42,31 +42,8 @@
 #include "doomtype.h"
 #include "d_event.h"
 #include "m_fixed.h"
+#include "options.h"
 
-
-//
-// The screen, in palette indices
-//
-
-#if !defined SCREEN_WIDTH
-#define SCREEN_WIDTH  240
-#endif
-
-#if !defined SCREEN_HEIGHT
-#define SCREEN_HEIGHT 160
-#endif
-
-// The status bar's rows at the bottom of the screen: Doom's 32 of 200 scaled, at least 32.
-#define ST_HEIGHT (SCREEN_HEIGHT > 200 ? (32 * SCREEN_HEIGHT + 100) / 200 : 32)
-
-// The 3D view at the top left, by default the screen above the status bar.
-#if !defined VIEW_WINDOW_WIDTH
-#define VIEW_WINDOW_WIDTH  SCREEN_WIDTH
-#endif
-
-#if !defined VIEW_WINDOW_HEIGHT
-#define VIEW_WINDOW_HEIGHT (SCREEN_HEIGHT - ST_HEIGHT)
-#endif
 
 // I_GetTime counts tics, this many per second.
 #define TIC_RATE          35

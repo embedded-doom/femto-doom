@@ -45,7 +45,7 @@ femtowad wads doom1.wad wads/
 A platform compiles [src](src) together with its own code; see [platform.md](docs/platform.md).
 
 - [platform.md](docs/platform.md): building the engine and the platform interface
-- [build.md](docs/build.md): build options
+- [options.h](src/options.h): build options
 - [wad-format.md](docs/wad-format.md): the WADs and the tool that builds them
 
 ## Example

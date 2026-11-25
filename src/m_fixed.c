@@ -25,11 +25,8 @@
  *-----------------------------------------------------------------------------*/
 
 #include "m_fixed.h"
+#include "options.h"
 
-
-#if !defined RECIPROCAL_DIV
-#define RECIPROCAL_DIV(v) (0xffffffffu / (v))
-#endif
 
 #define RECIPROCAL16(v) ((v) ? RECIPROCAL_DIV(v) : 0)
 

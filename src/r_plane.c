@@ -29,6 +29,7 @@
 #include "r_defs.h"
 #include "r_main.h"
 #include "i_platform.h"
+#include "options.h"
 #include "w_wad.h"
 
 #include "r_view.h"
@@ -49,10 +50,6 @@ byte R_GetPlaneColor(int16_t picnum, int16_t lightlevel)
 }
 
 
-
-#if !defined NUKAGE_COLOR
-#define NUKAGE_COLOR 122
-#endif
 
 void P_UpdateAnimatedFlat(void)
 {

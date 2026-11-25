@@ -48,6 +48,7 @@
 #include "m_fixed.h"
 #include "st_stuff.h"
 #include "i_platform.h"
+#include "options.h"
 #include "g_game.h"
 #include "m_random.h"
 
@@ -97,13 +98,6 @@ static fixed_t R_SilHeight(int16_t h)
 }
 
 
-#if defined MAX_DRAWSEGS
-#elif VIEW_WINDOW_WIDTH * VIEW_WINDOW_HEIGHT <= 38 * 28
-#define MAX_DRAWSEGS    64
-#else
-#define MAX_DRAWSEGS   128
-#endif
-
 // The game's tic and the 3D view take turns with this memory.
 static union
 {
@@ -115,10 +109,6 @@ static boolean rendering;
 
 #define _s_drawsegs scratch.drawsegs
 
-
-#if !defined MAX_OPENINGS
-#define MAX_OPENINGS (VIEW_WINDOW_WIDTH*16)
-#endif
 
 static height_t openings[MAX_OPENINGS];
 static height_t* lastopening;
