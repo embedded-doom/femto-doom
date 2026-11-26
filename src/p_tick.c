@@ -82,9 +82,14 @@ static uint16_t P_ThinkerRef(thinker_t* thinker)
   return thinker == &_g_thinkerclasscap ? THINKER_HEAD : Z_Ref(thinker);
 }
 
+// A removed thing keeps its memory while something still refers to it, as in Doom freed
+// memory keeps its contents until it is reused. Kept things are chained through next.
+static zref_t keptthings;
+
 void P_InitThinkers(void)
 {
   _g_thinkerclasscap.prev = _g_thinkerclasscap.next  = THINKER_HEAD;
+  keptthings = 0;
 }
 
 //
@@ -137,17 +142,55 @@ static void P_RemoveThinkerDelayed(thinker_t* thinker)
     Z_Free(thinker);
 }
 
-static void P_RemoveThingDelayed(thinker_t* thinker)
+static boolean P_Referenced(const mobj_t* thing)
 {
+    const zref_t ref = Z_Ref(thing);
+    if (_g_player.attacker == thing || _g_linetarget == thing || _g_soundtarget == ref)
+        return true;
+    for (thinker_t* th = P_NextThinker(NULL); th; th = P_NextThinker(th))
+        if ((th->function == TH_MOBJ || th->function == TH_REMOVETHING) && ((mobjext_t*)th)->target == ref)
+            return true;
+    return false;
+}
 
-    P_UnlinkThinker(thinker);
-
+static void P_FreeThing(thinker_t* thinker)
+{
     mobj_t* thing = P_MobjOfThinker(thinker);
 
     if(thing->flags & MF_POOLED)
         thing->type = MT_NOTHING;
     else
         Z_Free(thinker);
+}
+
+static void P_RemoveThingDelayed(thinker_t* thinker)
+{
+
+    P_UnlinkThinker(thinker);
+
+    if (P_Referenced(P_MobjOfThinker(thinker)))
+    {
+        thinker->next = keptthings;
+        keptthings = Z_Ref(thinker);
+    }
+    else
+        P_FreeThing(thinker);
+}
+
+static void P_FreeKeptThings(void)
+{
+    zref_t* link = &keptthings;
+    while (*link)
+    {
+        thinker_t* thinker = Z_Ptr(*link);
+        if (P_Referenced(P_MobjOfThinker(thinker)))
+            link = &thinker->next;
+        else
+        {
+            *link = thinker->next;
+            P_FreeThing(thinker);
+        }
+    }
 }
 
 //
@@ -287,6 +330,7 @@ static void P_RunThinkers (void)
     }
     _g_runnext = NULL;
 
+    P_FreeKeptThings();
     P_RunStatics();
 }
 
