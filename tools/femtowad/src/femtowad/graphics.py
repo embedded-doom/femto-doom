@@ -24,8 +24,8 @@ from .texcols import texture_columns
 from .wad import Lump, Wad, name8
 
 NAMED_LUMPS = (
-    "PLAYPAL", "COLORMAP", "DEMO3", "TEXTURE1", "TITLEPIC", "HELP2", "STBAR", "WIMAP0", "FLOOR4_8",
-    "STFGOD0", "STFDEAD0",
+    "PLAYPAL", "COLORMAP", "DEMO1", "DEMO2", "DEMO3", "TEXTURE1", "TITLEPIC", "HELP2", "STBAR", "WIMAP0",
+    "FLOOR4_8", "STFGOD0", "STFDEAD0",
     "M_DOOM", "M_NGAME", "M_OPTION", "M_QUITG", "M_NEWG", "M_SKILL", "M_JKILL", "M_ROUGH", "M_HURT", "M_ULTRA",
     "M_NMARE", "M_OPTTTL", "M_ENDGAM", "M_MESSG", "M_MSGON", "M_MSGOFF", "M_ARUN", "M_GAMMA", "M_SKULL1", "M_SKULL2",
     "M_THERML", "M_THERMM", "M_THERMR", "M_THERMO",

@@ -40,7 +40,7 @@ Values are i16 unless noted.
 | `TITLEPIC`, `HELP2`, `WIMAP0` | title screen, help screen, intermission map: raw pixels, the size of the screen |
 | `STBAR` | status bar background: raw pixels, the screen's width × `ST_HEIGHT`; Doom's bar with the arms panel and percent signs drawn in, scaled |
 | `FLOOR4_8` | finale background: 64 × 64 raw pixels |
-| `DEMO3` | the attract-mode demo |
+| `DEMO1`, `DEMO2`, `DEMO3` | the attract-mode demos |
 | `DPPISTOL` … | the PC speaker sounds, consecutive in the order of the `sfx_` numbers in `sounds.h`, as in Doom: 0 (u16), the tone count (u16), a tone (u8) per 1/140 s |
 | `D_E1M1` … | the songs for one PC speaker voice, consecutive in the order of the `mus_` numbers in `sounds.h`: pair count (u16), then per pair a tone (u8) and its length in 1/140 s (u8), or a drum (u8, 128 + kind: kick, snare, hi-hat or cymbal, other) and 0 |
 | status bar, menu and intermission pictures, sprites, wall patches | Doom's patch format (`patch_t` in [i_platform.h](../src/i_platform.h)); the status bar's scaled as the bar is, walls keep every 4th column and sprites every 2nd unless `femtowad wad` is told otherwise, equal columns are stored once |

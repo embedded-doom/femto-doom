@@ -390,6 +390,8 @@ const demostates[] =
 {
     {D_DrawTitle1, NULL},
 #if !defined NO_DEMOS
+    {G_DeferedPlayDemo, "demo1"},
+    {G_DeferedPlayDemo, "demo2"},
     {G_DeferedPlayDemo, "demo3"},
 #endif
     {NULL, NULL},
