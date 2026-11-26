@@ -58,13 +58,12 @@
 #define ZONE_UNIT	(sizeof(void*) > 4 ? 8 : 4)
 typedef uint16_t zindex_t;
 
+// The next block starts where this one ends, the last is followed by the sentinal.
 typedef struct
 {
-    uint16_t  size;			// in ZONE_UNIT, including the header and possibly tiny fragments
-    uint8_t   tag;			// PU_*, 0 for a free block
-    uint8_t   unused;
-    zindex_t  next;
-    zindex_t  prev;
+    uint32_t  size : 15;		// in ZONE_UNIT, including the header and possibly tiny fragments
+    uint32_t  prev : 15;
+    uint32_t  tag  : 2;			// PU_*, 0 for a free block
 #if defined ZONEIDCHECK
     uint16_t id;			// should be ZONEID
 #endif
@@ -72,10 +71,16 @@ typedef struct
 
 #define HEADER_UNITS	((sizeof(memblock_t) + ZONE_UNIT - 1) / ZONE_UNIT)
 
+typedef char assertZoneFitsBlockSize[ZREF_SPAN / ZONE_UNIT < (1 << 15) ? 1 : -1];
+#if !defined ZONEIDCHECK
+typedef char assertBlockHeaderSize[sizeof(memblock_t) == 4 ? 1 : -1];
+#endif
+
 
 uint8_t* _g_zonebase;
 
 static memblock_t* mainzone_sentinal;
+static zindex_t   mainzone_end;
 
 
 static zindex_t pointerToIndex(const void* ptr)
@@ -86,6 +91,12 @@ static zindex_t pointerToIndex(const void* ptr)
 static memblock_t* indexToPointer(zindex_t i)
 {
 	return (memblock_t*)(_g_zonebase + (uint32_t)i * ZONE_UNIT);
+}
+
+static zindex_t nextIndex(const memblock_t* block)
+{
+	const zindex_t next = pointerToIndex(block) + block->size;
+	return next == mainzone_end ? pointerToIndex(mainzone_sentinal) : next;
 }
 
 
@@ -141,13 +152,12 @@ void Z_Init (void)
 
 	mainzone_sentinal->size = HEADER_UNITS;
 	mainzone_sentinal->tag  = PU_STATIC;
-	mainzone_sentinal->next = first;
 	mainzone_sentinal->prev = first;
 
 	block->size = heapSize / ZONE_UNIT - HEADER_UNITS;
+	mainzone_end = heapSize / ZONE_UNIT;
 	block->tag  = 0;
 	block->prev = sentinal;
-	block->next = sentinal;
 #if defined ZONEIDCHECK
 	block->id   = ZONEID;
 #endif
@@ -178,19 +188,17 @@ static void Z_FreeBlock(memblock_t* block)
     {
         // merge with previous free block
         other->size += block->size;
-        other->next  = block->next;
-        indexToPointer(other->next)->prev = block->prev; // == pointerToIndex(other);
+        indexToPointer(nextIndex(other))->prev = block->prev; // == pointerToIndex(other);
 
         block = other;
     }
 
-    other = indexToPointer(block->next);
+    other = indexToPointer(nextIndex(block));
     if (!other->tag)
     {
         // merge the next free block onto the end
         block->size += other->size;
-        block->next  = other->next;
-        indexToPointer(block->next)->prev = pointerToIndex(block);
+        indexToPointer(nextIndex(block))->prev = pointerToIndex(block);
     }
 }
 
@@ -210,7 +218,7 @@ static uint32_t Z_GetLargestFreeBlockSize(void)
 
 	uint32_t largestFreeBlockSize = 0;
 
-	for (memblock_t* block = indexToPointer(mainzone_sentinal->next); pointerToIndex(block) != sentinal; block = indexToPointer(block->next))
+	for (memblock_t* block = indexToPointer(nextIndex(mainzone_sentinal)); pointerToIndex(block) != sentinal; block = indexToPointer(nextIndex(block)))
 		if (!block->tag && (uint32_t)block->size * ZONE_UNIT > largestFreeBlockSize)
 			largestFreeBlockSize = (uint32_t)block->size * ZONE_UNIT;
 
@@ -223,7 +231,7 @@ static uint32_t Z_GetTotalFreeMemory(void)
 
 	uint32_t totalFreeMemory = 0;
 
-	for (memblock_t* block = indexToPointer(mainzone_sentinal->next); pointerToIndex(block) != sentinal; block = indexToPointer(block->next))
+	for (memblock_t* block = indexToPointer(nextIndex(mainzone_sentinal)); pointerToIndex(block) != sentinal; block = indexToPointer(nextIndex(block)))
 		if (!block->tag)
 			totalFreeMemory += (uint32_t)block->size * ZONE_UNIT;
 
@@ -242,7 +250,7 @@ static void* Z_TryMalloc(uint16_t size, int8_t tag)
     // the smallest free block that fits, of equal ones the first
     zindex_t sentinal = pointerToIndex(mainzone_sentinal);
     memblock_t* base = NULL;
-    for (memblock_t* block = indexToPointer(mainzone_sentinal->next); pointerToIndex(block) != sentinal; block = indexToPointer(block->next))
+    for (memblock_t* block = indexToPointer(nextIndex(mainzone_sentinal)); pointerToIndex(block) != sentinal; block = indexToPointer(nextIndex(block)))
         if (!block->tag && block->size >= units && (!base || block->size < base->size))
         {
             base = block;
@@ -263,15 +271,13 @@ static void* Z_TryMalloc(uint16_t size, int8_t tag)
         memblock_t* newblock = indexToPointer(newblock_index);
         newblock->size = newblock_units;
         newblock->tag  = 0;
-        newblock->next = base->next;
         newblock->prev = base_index;
 #if defined ZONEIDCHECK
         newblock->id   = ZONEID;
 #endif
 
-        indexToPointer(base->next)->prev = newblock_index;
+        indexToPointer(nextIndex(base))->prev = newblock_index;
         base->size = units;
-        base->next = newblock_index;
     }
 
     base->tag = tag;
@@ -332,10 +338,10 @@ void Z_FreeTags(void)
     zindex_t sentinal = pointerToIndex(mainzone_sentinal);
     memblock_t* next;
 
-    for (memblock_t* block = indexToPointer(mainzone_sentinal->next); pointerToIndex(block) != sentinal; block = next)
+    for (memblock_t* block = indexToPointer(nextIndex(mainzone_sentinal)); pointerToIndex(block) != sentinal; block = next)
     {
         // get link before freeing
-        next = indexToPointer(block->next);
+        next = indexToPointer(nextIndex(block));
 
         if (block->tag == PU_LEVEL || block->tag == PU_LEVSPEC)
             Z_FreeBlock(block);
@@ -349,9 +355,9 @@ void Z_CheckHeap (void)
 {
     zindex_t sentinal = pointerToIndex(mainzone_sentinal);
 
-    for (memblock_t* block = indexToPointer(mainzone_sentinal->next); ; block = indexToPointer(block->next))
+    for (memblock_t* block = indexToPointer(nextIndex(mainzone_sentinal)); ; block = indexToPointer(nextIndex(block)))
     {
-        if (block->next == sentinal)
+        if (nextIndex(block) == sentinal)
         {
             // all blocks have been hit
             break;
@@ -362,13 +368,10 @@ void Z_CheckHeap (void)
             I_Error("Z_CheckHeap: block has id %x instead of ZONEID", block->id);
 #endif
 
-        if (pointerToIndex(block) + block->size != block->next)
-            I_Error ("Z_CheckHeap: block size does not touch the next block\n");
-
-        if (indexToPointer(block->next)->prev != pointerToIndex(block))
+        if (indexToPointer(nextIndex(block))->prev != pointerToIndex(block))
             I_Error ("Z_CheckHeap: next block doesn't have proper back link\n");
 
-        if (!block->tag && !indexToPointer(block->next)->tag)
+        if (!block->tag && !indexToPointer(nextIndex(block))->tag)
             I_Error ("Z_CheckHeap: two consecutive free blocks\n");
     }
 }
