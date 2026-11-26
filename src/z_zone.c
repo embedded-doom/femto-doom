@@ -33,14 +33,10 @@
 
 //
 // ZONE MEMORY
-// PU - purge tags.
-// Tags < 100 are not overwritten until freed.
+// Tags, 0 for a free block.
 #define PU_STATIC		1	// static entire execution time
 #define PU_LEVEL		2	// static until level exited
 #define PU_LEVSPEC		3	// a special thinker in a level
-#define PU_CACHE		4
-
-#define PU_PURGELEVEL PU_CACHE
 
 
 //
@@ -48,10 +44,7 @@
 //
 // There is never any space between memblocks,
 //  and there will never be two contiguous free memblocks.
-// The rover can be left pointing at a non-empty block.
-//
-// It is of no value to free a cachable block,
-//  because it will get overwritten automatically if needed.
+// A block comes from the smallest free block that fits, which leaves the larger ones whole.
 //
 
 #if defined INSTRUMENTED
@@ -68,7 +61,7 @@ typedef uint16_t zindex_t;
 typedef struct
 {
     uint16_t  size;			// in ZONE_UNIT, including the header and possibly tiny fragments
-    uint8_t   tag;			// purgelevel, 0 for a free block
+    uint8_t   tag;			// PU_*, 0 for a free block
     uint8_t   unused;
     zindex_t  next;
     zindex_t  prev;
@@ -83,7 +76,6 @@ typedef struct
 uint8_t* _g_zonebase;
 
 static memblock_t* mainzone_sentinal;
-static zindex_t   mainzone_rover;
 
 
 static zindex_t pointerToIndex(const void* ptr)
@@ -144,13 +136,13 @@ void Z_Init (void)
 	zindex_t sentinal = pointerToIndex(mainzone_sentinal);
 
 	// set the rest of the zone to one free block
-	mainzone_rover = sentinal + HEADER_UNITS;
-	memblock_t* block = indexToPointer(mainzone_rover);
+	const zindex_t first = sentinal + HEADER_UNITS;
+	memblock_t* block = indexToPointer(first);
 
 	mainzone_sentinal->size = HEADER_UNITS;
 	mainzone_sentinal->tag  = PU_STATIC;
-	mainzone_sentinal->next = mainzone_rover;
-	mainzone_sentinal->prev = mainzone_rover;
+	mainzone_sentinal->next = first;
+	mainzone_sentinal->prev = first;
 
 	block->size = heapSize / ZONE_UNIT - HEADER_UNITS;
 	block->tag  = 0;
@@ -189,9 +181,6 @@ static void Z_FreeBlock(memblock_t* block)
         other->next  = block->next;
         indexToPointer(other->next)->prev = block->prev; // == pointerToIndex(other);
 
-        if (pointerToIndex(block) == mainzone_rover)
-            mainzone_rover = block->prev; // == pointerToIndex(other);
-
         block = other;
     }
 
@@ -202,9 +191,6 @@ static void Z_FreeBlock(memblock_t* block)
         block->size += other->size;
         block->next  = other->next;
         indexToPointer(block->next)->prev = pointerToIndex(block);
-
-        if (pointerToIndex(other) == mainzone_rover)
-            mainzone_rover = pointerToIndex(block);
     }
 }
 
@@ -250,57 +236,22 @@ static uint32_t Z_GetTotalFreeMemory(void)
 //
 static void* Z_TryMalloc(uint16_t size, int8_t tag)
 {
-    // scan through the block list,
-    // looking for the first free block
-    // of sufficient size,
-    // throwing out any purgable blocks along the way.
-
     // account for size of block header
     const uint16_t units = (size + (ZONE_UNIT - 1)) / ZONE_UNIT + HEADER_UNITS;
 
-    // if there is a free block behind the rover,
-    //  back up over them
-    memblock_t* base = indexToPointer(mainzone_rover);
-
-    memblock_t* previous_block = indexToPointer(base->prev);
-    if (!previous_block->tag)
-        base = previous_block;
-
-    memblock_t* rover = base;
-    zindex_t    start_index = base->prev;
-
-    do
-    {
-        if (pointerToIndex(rover) == start_index)
+    // the smallest free block that fits, of equal ones the first
+    zindex_t sentinal = pointerToIndex(mainzone_sentinal);
+    memblock_t* base = NULL;
+    for (memblock_t* block = indexToPointer(mainzone_sentinal->next); pointerToIndex(block) != sentinal; block = indexToPointer(block->next))
+        if (!block->tag && block->size >= units && (!base || block->size < base->size))
         {
-            // scanned all the way around the list
-            return NULL;
+            base = block;
+            if (block->size == units)
+                break;
         }
 
-        if (rover->tag)
-        {
-            if (rover->tag < PU_PURGELEVEL)
-            {
-                // hit a block that can't be purged,
-                //  so move base past it
-                base = rover = indexToPointer(rover->next);
-            }
-            else
-            {
-                // free the rover block (adding the size to base)
-
-                // the rover can be the base block
-                base  = indexToPointer(base->prev);
-                Z_FreeBlock(rover);
-                base  = indexToPointer(base->next);
-                rover = indexToPointer(base->next);
-            }
-        }
-        else
-            rover = indexToPointer(rover->next);
-
-    } while (base->tag || base->size < units);
-    // found a block big enough
+    if (!base)
+        return NULL;
 
     uint16_t newblock_units = base->size - units;
     if ((uint32_t)newblock_units * ZONE_UNIT > MIN_FRAGMENT)
@@ -327,9 +278,6 @@ static void* Z_TryMalloc(uint16_t size, int8_t tag)
 #if defined ZONEIDCHECK
     base->id  = ZONEID;
 #endif
-
-    // next allocation will start looking here
-    mainzone_rover = base->next;
 
 #if defined INSTRUMENTED
     running_count += base->size * ZONE_UNIT;
@@ -389,7 +337,7 @@ void Z_FreeTags(void)
         // get link before freeing
         next = indexToPointer(block->next);
 
-        if (PU_LEVEL <= block->tag && block->tag <= (PU_PURGELEVEL - 1))
+        if (block->tag == PU_LEVEL || block->tag == PU_LEVSPEC)
             Z_FreeBlock(block);
     }
 }
