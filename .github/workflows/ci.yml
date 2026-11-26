@@ -59,7 +59,7 @@ jobs:
           tar xzf chocolate.tar.gz
           cd chocolate-doom-3.0.1
           patch -p1 < ../tests/chocolate/trace.patch
-          ./configure --quiet
+          ./configure --quiet CFLAGS="-O2 -fcommon"
           make -j"$(nproc)" >/dev/null
       - name: builtin demos (DEMO1, DEMO2, DEMO3)
         run: python3 tests/run.py builtin "$CHOCOLATE" "$DOOM1_WAD"
