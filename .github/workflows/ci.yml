@@ -61,7 +61,7 @@ jobs:
           patch -p1 < ../tests/chocolate/trace.patch
           ./configure --quiet CFLAGS="-O2 -fcommon"
           make -j"$(nproc)" >/dev/null
-      - name: builtin demos (DEMO1, DEMO2, DEMO3)
+      - name: "demos: builtin (DEMO1, DEMO2, DEMO3)"
         run: python3 tests/run.py builtin "$CHOCOLATE" "$DOOM1_WAD"
       - name: Fetch statcheck
         run: |
@@ -70,7 +70,7 @@ jobs:
           git -C statcheck sparse-checkout set --no-cone '/demos/doom/*/e1*/*.lmp'
           git -C statcheck fetch -q --depth 1 --filter=blob:none origin "$STATCHECK_COMMIT"
           git -C statcheck checkout -q FETCH_HEAD
-      - name: statcheck demos
+      - name: "demos: statcheck"
         run: python3 tests/run.py statcheck "$CHOCOLATE" "$DOOM1_WAD" statcheck
 
   examples:
