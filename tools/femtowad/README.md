@@ -16,7 +16,7 @@ femtowad wad doom1.wad femto.wad
 | `--texture-shift N` | 0 | `TEXTURE_SHIFT` |
 | `--high-detail` | off | `HIGH_DETAIL` |
 | `--wall-column-shift N` | 2 | — |
-| `--sprite-column-shift N` | 1 | — |
+| `--sprite-column-shift N` | 0 | — |
 
 Walls keep every 2^N-th column and sprites every 2^N-th. Finer walls need more reads and shimmer
 in the distance at low view sizes.

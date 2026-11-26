@@ -78,7 +78,7 @@ def main() -> None:
         help="walls keep every 2^N-th column; fine walls shimmer in the distance",
     )
     wad_parser.add_argument(
-        "--sprite-column-shift", type=int, default=1, choices=range(3), help="sprites keep every 2^N-th column"
+        "--sprite-column-shift", type=int, default=0, choices=range(3), help="sprites keep every 2^N-th column"
     )
     wad_parser.set_defaults(run=wad)
 

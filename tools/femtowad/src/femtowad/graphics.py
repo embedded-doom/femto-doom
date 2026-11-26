@@ -3,7 +3,7 @@
 """The graphics, sounds and music: the IWAD's lumps the engine reads, in the layout it reads in
 place.
 
-Walls keep every 2^N-th column and sprites every 2^M-th, by default every 4th and every 2nd,
+Walls keep every 2^N-th column and sprites every 2^M-th, by default every 4th and every one,
 and pictures store equal columns once.
 TEXTUREP lists each texture's patches as lump numbers, SPRITES each sprite frame's lumps, and
 TEXCOLS every wall texture's columns. The PC speaker sounds and the songs for one speaker voice
@@ -98,7 +98,7 @@ def build_graphics(
     texshift: int,
     high_detail: bool,
     wall_column_shift: int = 2,
-    sprite_column_shift: int = 1,
+    sprite_column_shift: int = 0,
 ) -> Wad:
     """`art` replaces lumps of the same name or is appended. Of lumps sharing a name only the last
     is kept, the one Doom's lookup finds."""
