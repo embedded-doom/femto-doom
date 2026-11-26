@@ -730,8 +730,9 @@ static void P_SettleCorpse(mobjext_t* ext)
         }
     if (_g_player.attacker == old)
         _g_player.attacker = at;
+    // only dereferenced right after an aim, which sets it again
     if (_g_linetarget == old)
-        _g_linetarget = at;
+        _g_linetarget = NULL;
 
     P_RemoveThing(old);
 }
@@ -927,7 +928,7 @@ static restmobj_t* P_RestCorpse(const mobj_t* mobj, zref_t ref)
     else
         return NULL;
 
-    if (_g_player.attacker == mobj || _g_linetarget == mobj)
+    if (_g_player.attacker == mobj)
         return NULL;
     for (thinker_t* th = P_NextThinker(NULL); th; th = P_NextThinker(th))
         if (th->function == TH_MOBJ && ((mobjext_t*)th)->target == ref)
