@@ -107,9 +107,9 @@
 #define THING_POOL_RESERVE 0
 #endif
 
-// A free zone fragment smaller than this stays with the block allocated before it.
+// A free zone fragment of at most this many bytes stays with the block allocated before it.
 #if !defined MIN_FRAGMENT
-#define MIN_FRAGMENT 16
+#define MIN_FRAGMENT 8
 #endif
 
 // The division behind reciprocals, e.g. through a divider unit.
